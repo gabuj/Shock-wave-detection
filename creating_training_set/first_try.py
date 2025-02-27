@@ -2,7 +2,8 @@ from skimage import filters
 from skimage import io
 from skimage import color
 
-image_path="shockwaves_images\Blunt_body_reentry_shapes1.png"
+image_path="shockwaves_images/Blunt_body_reentry_shapes1.png"
+
 image=io.imread(image_path)
 #make the image grayscale to have only one channel
 #disregard the transparency channel
