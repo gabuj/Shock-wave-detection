@@ -12,7 +12,7 @@ from sklearn.cluster import KMeans
 import cv2
 
 
-threshold=0.00
+threshold=0.034
 threshold_last_detection=0.1
 
 x_left=330
@@ -20,9 +20,9 @@ y_top=143
 y_max_second_top=94
 y_max_second_bottom=197
 
-image_name="Blunt_body_reentry_shapes1.png"
-image_path="shockwaves_images\\"+image_name
-result_name= "calibrated_training_images\\"+image_name+"_shockwave_position_2.png"
+image_name="200512510409_846"
+image_path="shockwaves_images\\"+image_name + ".jpg"
+result_name= "calibrated_training_images\\"+image_name+"_shockwave_position.png"
 
 
 image=io.imread(image_path)
@@ -41,16 +41,19 @@ sobel_image=filters.sobel(image)
 
 #I know have the edges of the image, I want to localise the shock wave by passing it through a threshold filter and then manually selecting the region of interest
 sobel_image[sobel_image<threshold]=0
-io.imshow(sobel_image)
-io.show()
-
 # Binarize the image (ensuring only strong edges are considered)
-binary_edges = sobel_image > 0.1  # Assuming edges are already thresholded
+binary_edges = sobel_image > threshold  # Assuming edges are already thresholded
+
+plt.figure()
+plt.imshow(sobel_image)
+plt.title("Sobel Filtered Image")
+plt.show()
+
 
 # Label connected components
 labeled_edges, num_labels = measure.label(binary_edges, return_num=True, connectivity=1)
 
-shockwave_sample=[111,93]
+shockwave_sample=[643,2682] #y,x
 
 #find which label is the shockwave and display it
 
@@ -58,11 +61,16 @@ shockwave_label=labeled_edges[shockwave_sample[0],shockwave_sample[1]]
 possible_shockwave_mask=labeled_edges==shockwave_label
 
 plt.imshow(possible_shockwave_mask)
+plt.title("shockwave label Mask")
 plt.show()
 
 
 #thin the lines 
 thin_edges = skeletonize(possible_shockwave_mask)
+
+plt.imshow(thin_edges)
+plt.title("think lines Mask")
+plt.show()
 # Detect lines using Hough Transform
 lines = probabilistic_hough_line(thin_edges, threshold=10, line_length=30, line_gap=5)
 
