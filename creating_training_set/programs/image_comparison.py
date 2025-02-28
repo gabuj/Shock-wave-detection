@@ -2,9 +2,9 @@ import matplotlib.pyplot as plt
 import cv2
 from skimage import color
 
-image_name="200512510409_846"
-image="shockwaves_images\\"+image_name + ".jpg"   
-result= "calibrated_training_images\\"+image_name+"_shockwave_position_1.png"
+image_name="2005125111210_846"
+image="creating_training_set/shockwaves_images\\"+image_name + ".jpg"   
+result= "calibrated_training_images/programs\\"+image_name+"_shockwave_position_1.png"
 
 
 # Load images

@@ -3,11 +3,11 @@ import numpy as np
 import os
 
 # Path to directory with multiple trace images
-trace_dir = "temporary_traces/"
+trace_dir = "creating_training_set/temporary_traces/"
 trace_files = os.listdir(trace_dir)  # List of all trace files (assumed to be images)
 
 image_name = "200512510409_846"
-result_name = "calibrated_training_images/" + image_name + "_shockwave_position_1.png"
+result_name = "calibrated_training_images/programs/" + image_name + "_shockwave_position_1.png"
 
 threshold=127
 

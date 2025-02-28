@@ -8,9 +8,9 @@ threshold=0.024
 
 
 # Load the image
-image_name = "200512510409_846"
-image_path = "shockwaves_images/" + image_name + ".jpg"
-result_name = "temporary_traces/" + image_name + "_shockwave_position_4.png"
+image_name = "2005125111210_846"
+image_path = "creating_training_set/shockwaves_images/" + image_name + ".jpg"
+result_name = "temporary_traces/programs/" + image_name + "_shockwave_position_4.png"
 
 image = cv2.imread(image_path)
 height, width = image.shape[:2]
