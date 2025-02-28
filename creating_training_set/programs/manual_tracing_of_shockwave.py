@@ -3,6 +3,7 @@ import numpy as np
 from scipy.interpolate import splprep, splev
 from skimage import filters
 from skimage import color
+import matplotlib.pyplot as plt
 
 threshold=0.024
 
@@ -10,9 +11,10 @@ threshold=0.024
 # Load the image
 image_name = "2005125111210_846"
 image_path = "creating_training_set/shockwaves_images/" + image_name + ".jpg"
-result_name = "temporary_traces/programs/" + image_name + "_shockwave_position_4.png"
+result_name = "creating_training_set/temporary_traces/" + image_name + "_shockwave_position_4.png"
 
 image = cv2.imread(image_path)
+
 height, width = image.shape[:2]
 
 
@@ -124,7 +126,6 @@ while True:
 
 cv2.destroyAllWindows()
 # Display the final result
-import matplotlib.pyplot as plt
 plt.imshow(mask, cmap="gray")
 plt.title("Continuous Shockwave Lines")
 plt.show()
