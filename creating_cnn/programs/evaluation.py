@@ -2,9 +2,10 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import json
-from training_dataset import ShockWaveDataset
+from creating_cnn.deprecated_programs.training_dataset_old import ShockWaveDataset
 import matplotlib.pyplot as plt
 from torch import nn
+from cnn_architecture import UNet
 
 #adjustable parameters
 batch_size = 1
@@ -19,10 +20,11 @@ test_file_path = "creating_cnn/outputs/temporary/test_files.json"
 
 
 
-#acquire model
 model_path = "creating_cnn/outputs/models/model.pth"
-model=torch.load(model_path)
-
+# Initialize the model (same architecture as during training)
+model = UNet(pretrained=False)  # No need to load pretrained weights for this case
+# Load the trained weights into the model
+model.load_state_dict(torch.load(model_path))
 
 
 #acquire data loaders

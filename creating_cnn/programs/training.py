@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from cnn_architecture import UNet
-from training_dataset import ShockWaveDataset
+from creating_cnn.programs.training_dataset import ShockWaveDataset
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
 import os
@@ -15,7 +15,7 @@ import json
 model_path = "creating_cnn/outputs/models/model.pth"
 batch_size = 1
 learning_rate = 1e-4
-num_epochs = 20
+num_epochs = 10
 
 # Define paths to your image and label directories
 images_dir = "creating_training_set/schockwaves_images_used"
@@ -57,7 +57,7 @@ test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 # Initialize the U-Net model
 model = UNet()
 if torch.cuda.is_available():
-    model = model.cuda()  # Move the model to GPU if available
+    model = model.cuda()  # Move the model to GPU if available, it's faster to train on GPU
 
 # Define optimizer and loss function
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -66,11 +66,12 @@ criterion = nn.BCELoss()  # Binary Cross Entropy loss for binary classification 
 # Training loop
 for epoch in range(num_epochs):
     model.train()  # Set the model to training mode
-    running_loss = 0.0
+    running_loss = 0.0  #running loss is the loss for the current epoch
 
     # Loop through the dataloader
     for inputs, labels in train_dataloader:
         if torch.cuda.is_available():
+            print("you must have a nice GPU")
             inputs = inputs.cuda()  # Move inputs to GPU if available
             labels = labels.cuda()  # Move labels to GPU if available
 
@@ -99,13 +100,14 @@ torch.save(model.state_dict(), model_path)
 model.eval()
 
 # Initialize metrics
-total_loss = 0.0
+total_loss = 0.0    #as before, total loss is the sum of the loss for each batch
 iou_scores = []
 
 # Disable gradient calculation during evaluation
 with torch.no_grad():
     for inputs, labels in test_dataloader:
         if torch.cuda.is_available():
+            print("again, nice GPU")
             inputs = inputs.cuda()  # Move inputs to GPU if available
             labels = labels.cuda()  # Move labels to GPU if available
 
@@ -125,11 +127,12 @@ with torch.no_grad():
         iou = intersection / union if union != 0 else 0
         iou_scores.append(iou.item())
 
-        # Optionally visualize output
-        binary_output = binary_output.squeeze().cpu().numpy()  # Remove batch and channel dimensions
+        # Optionally visualize output together with the ground truth
+        binary_output = binary_output.squeeze().cpu().numpy()
         plt.imshow(binary_output, cmap='gray')
+        plt.imshow(labels.squeeze().cpu().numpy(), cmap='gray', alpha=0.5) #not sure it will work, trying to overlay the ground truth
         plt.show()
-
+        
 # Print evaluation results
 avg_loss = total_loss / len(test_dataloader)
 avg_iou = sum(iou_scores) / len(iou_scores)
