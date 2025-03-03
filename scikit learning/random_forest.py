@@ -1,49 +1,116 @@
-from sklearn.ensemble import RandomForestClassifier
-from skimage.feature import hog
 import cv2
 import numpy as np
+from skimage import filters, color
+import os
+import random
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score, recall_score
 import matplotlib.pyplot as plt
 
-# Load image in grayscale
-image = cv2.imread("/shockwaves_images/train_1.png", cv2.IMREAD_GRAYSCALE)
 
-# Apply Gaussian Blur to reduce noise
-blurred = cv2.GaussianBlur(image, (5,5), 0)
+# Define paths
+trace_dir = "creating_training_set/shockwaves_images/"
+trace_files = os.listdir(trace_dir)
 
-# Compute Sobel gradients
-sobel_x = cv2.Sobel(blurred, cv2.CV_64F, 1, 0, ksize=3)  # Gradient in X direction
-sobel_y = cv2.Sobel(blurred, cv2.CV_64F, 0, 1, ksize=3)  # Gradient in Y direction
+threshold = 0.024
+sample_size = 10000  #number of pixels to sample
 
-# Compute Edge Magnitude
-sobel_magnitude = np.sqrt(sobel_x**2 + sobel_y**2)
 
-# Normalize to 0-255
-sobel_magnitude = np.uint8(255 * sobel_magnitude / np.max(sobel_magnitude))
+features = []
+labels = []
 
-# Display results
-plt.figure(figsize=(12,4))
-plt.subplot(1,3,1), plt.imshow(sobel_x, cmap='gray'), plt.title("Sobel X")
-plt.subplot(1,3,2), plt.imshow(sobel_y, cmap='gray'), plt.title("Sobel Y")
-plt.subplot(1,3,3), plt.imshow(sobel_magnitude, cmap='gray'), plt.title("Edge Magnitude")
-plt.show()
+for image_file in trace_files:
+    image_path = os.path.join(trace_dir, image_file)
+    image = cv2.imread(image_path)
 
-'''
-# Extract HOG features
-hog_features, _ = hog(enhanced, pixels_per_cell=(8, 8), cells_per_block=(2, 2), visualize=True)
+    if image is None:
+        continue
 
-# Generate training data (label edges from Canny)
-labels = (edges > 0).astype(int).flatten()
-X_train = hog_features.reshape(-1, 1)
-y_train = labels
+    #convert to grayscale and apply Sobel filter
+    image = color.rgb2gray(image)
+    sobel_image = filters.sobel(image)
 
-# Train Random Forest Classifier
-clf = RandomForestClassifier(n_estimators=100)
+    # Threshold edges
+    binary_edges = (sobel_image > threshold).astype(np.uint8)
+
+    #randomly selecting pixels for training
+    height, width = binary_edges.shape
+    for _ in range(sample_size):
+        x, y = random.randint(0, width - 1), random.randint(0, height - 1)
+        patch = image[max(0, y - 1): min(height, y + 2), max(0, x - 1): min(width, x + 2)]
+        patch = patch.flatten()
+
+        if len(patch) == 9:  # Ensure full patch size
+            features.append(patch)
+            labels.append(binary_edges[y, x])  # 1 for edge, 0 for background
+
+
+X = np.array(features)
+y = np.array(labels)
+
+print(f"Dataset size: {X.shape[0]} samples, each with {X.shape[1]} features.")
+
+
+
+'''model'''
+
+# Split dataset into training and testing
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# train
+clf = RandomForestClassifier(n_estimators=100, random_state=42)
 clf.fit(X_train, y_train)
 
-# Predict edges
-pred_edges = clf.predict(X_train).reshape(image.shape)
+#model performance
+y_pred = clf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy * 100:.2f}%")
 
-plt.imshow(pred_edges, cmap='gray')
-plt.title("AI-Based Edge Detection (Random Forest)")
+
+def detect_edges(image_path, model, threshold=0.024):
+    image = cv2.imread(image_path)
+    if image is None:
+        return None
+
+    image = color.rgb2gray(image)
+    height, width = image.shape
+    sobel_image = filters.sobel(image)
+
+    predicted_mask = np.zeros((height, width), dtype=np.uint8)
+
+    for y in range(1, height - 1):
+        for x in range(1, width - 1):
+            patch = image[y - 1:y + 2, x - 1:x + 2].flatten()
+            if len(patch) == 9:
+                pred = model.predict([patch])[0]
+                predicted_mask[y, x] = 255 if pred == 1 else 0  # White for edges
+
+    return predicted_mask
+
+
+# Test the model on a new image
+test_image = "/Users/andracriscov/Documents/project Y3/repo/creating_training_set/shockwaves_images/train_1.png"
+predicted_edges = detect_edges(test_image, clf)
+
+# Display the result
+plt.imshow(predicted_edges, cmap="gray")
+plt.title("AI-Detected Shockwave Edges")
 plt.show()
-'''
+
+# Load manually traced mask
+#manual_mask = cv2.imread("creating_training_set/temporary_traces/test_image_shockwave_position_4.png", cv2.IMREAD_GRAYSCALE)
+#manual_mask = cv2.threshold(manual_mask, 127, 255, cv2.THRESH_BINARY)[1] // 255  # Convert to binary
+
+# Convert AI prediction to binary
+ai_mask = predicted_edges // 255
+
+# Calculate precision and recall
+#precision = precision_score(manual_mask.flatten(), ai_mask.flatten())
+#recall = recall_score(manual_mask.flatten(), ai_mask.flatten())
+
+precision = precision_score(ai_mask.flatten())
+recall = recall_score(ai_mask.flatten())
+
+print(f"Precision: {precision:.2f}, Recall: {recall:.2f}")
