@@ -1,1 +1,1 @@
-image_name = "Blunt_body_reentry_shapes3"
+image_name = "shockwave_forwardramp5_8"
