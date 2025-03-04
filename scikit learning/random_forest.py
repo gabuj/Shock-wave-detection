@@ -9,7 +9,12 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score, recall_score
 import matplotlib.pyplot as plt
 
+'''#training images path: 
 
+/Users/andracriscov/Documents/project Y3/repo/creating_training_set/schockwaves_images_used/200512510409_846.jpg
+airbos_f7_p5.jpg
+Blunt_body_reentry_shapes1.png
+'''
 # Define paths
 trace_dir = "creating_training_set/shockwaves_images/"
 trace_files = os.listdir(trace_dir)
@@ -70,7 +75,7 @@ print(f"Model Accuracy: {accuracy * 100:.2f}%")
 
 
 def detect_edges(image_path, model, threshold=0.024):
-    image = cv2.imread(image_path)
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if image is None:
         return None
 
@@ -94,23 +99,39 @@ def detect_edges(image_path, model, threshold=0.024):
 test_image = "/Users/andracriscov/Documents/project Y3/repo/creating_training_set/shockwaves_images/train_1.png"
 predicted_edges = detect_edges(test_image, clf)
 
+print(type(predicted_edges))  # gives type none
+print(predicted_edges.shape)
+
 # Display the result
 plt.imshow(predicted_edges, cmap="gray")
 plt.title("AI-Detected Shockwave Edges")
 plt.show()
 
-# Load manually traced mask
-#manual_mask = cv2.imread("creating_training_set/temporary_traces/test_image_shockwave_position_4.png", cv2.IMREAD_GRAYSCALE)
-#manual_mask = cv2.threshold(manual_mask, 127, 255, cv2.THRESH_BINARY)[1] // 255  # Convert to binary
+#Load manually traced mask
+manual_mask = cv2.imread("/Users/andracriscov/Documents/project Y3/repo/creating_training_set/shockwaves_images/label_1.png", cv2.IMREAD_GRAYSCALE)
+manual_mask = cv2.threshold(manual_mask, 127, 255, cv2.THRESH_BINARY)[1] // 255  # Convert to binary
 
 # Convert AI prediction to binary
 ai_mask = predicted_edges // 255
 
 # Calculate precision and recall
-#precision = precision_score(manual_mask.flatten(), ai_mask.flatten())
-#recall = recall_score(manual_mask.flatten(), ai_mask.flatten())
+precision = precision_score(manual_mask.flatten(), ai_mask.flatten())
+recall = recall_score(manual_mask.flatten(), ai_mask.flatten())
 
-precision = precision_score(ai_mask.flatten())
-recall = recall_score(ai_mask.flatten())
+#precision = precision_score(ai_mask.flatten())
+#recall = recall_score(ai_mask.flatten())
 
 print(f"Precision: {precision:.2f}, Recall: {recall:.2f}")
+
+
+
+
+
+# Display edges for each image
+plt.figure(figsize=(6, 6))
+plt.imshow(binary_edges, cmap="gray")
+plt.title(f"Binary Edges: {image_file}")
+plt.axis("off")
+plt.show()
+
+
