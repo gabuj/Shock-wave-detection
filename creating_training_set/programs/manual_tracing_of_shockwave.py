@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from scipy.interpolate import splprep, splev
 from skimage import filters
+from skimage import feature
 from skimage import color
 import matplotlib.pyplot as plt
 from image_name import image_name
@@ -10,29 +11,41 @@ threshold=0
 
 
 # Load the image
-image_path = "creating_training_set/shockwaves_images/simulated_images/" + image_name + ".png"
+image_path = "creating_training_set/shockwaves_images/" + image_name + ".jpg"
 result_name = "creating_training_set/temporary_traces/" + image_name + "_shockwave_position_3.png"
 
 image = cv2.imread(image_path)
 
-print("image path is ", image_path)
+#print("image path is ", image_path)
 
 height, width = image.shape[:2]
 
 
 image = image[:,:,:3]
 image = color.rgb2gray(image)
+#to input in the canny filter, the image must be normalized and in grayscale and float
 
-#apply the sobel filter
-sobel_image=filters.sobel(image)
-
+#print type of image
+#normalize image
+image = image / image.max()
+image=image*255
+image=image.astype(np.uint8)
+#apply the canny filter
+canny_image=cv2.Canny(image, threshold1=140, threshold2=255)
+sobel_image = filters.sobel(image)
 #I know have the edges of the image, I want to localise the shock wave by passing it through a threshold filter and then manually selecting the region of interest
 sobel_image[sobel_image<threshold]=0
 
 #reconvert sobel to rdg by putting equal values in all channels
 sobel_image = np.stack([sobel_image] * 3, axis=-1)
 
+#print type of sobel_image
+print("type of sobel_image is ", type(sobel_image))
 
+# Display the image
+plt.imshow(sobel_image, cmap="gray")
+plt.title("Original Image")
+plt.show()
 #in case sobel image doesn't work, use image:
 
 image= np.stack([image] * 3, axis=-1)
@@ -117,7 +130,7 @@ cv2.namedWindow("Trace the Shockwave")
 cv2.setMouseCallback("Trace the Shockwave", draw_line)
 
 while True:
-    overlay = image.copy()
+    overlay = sobel_image.copy()
     overlay[mask > 0] = [0, 255, 0]  # Highlight traced parts in green
     cv2.imshow("Trace the Shockwave", overlay)
 

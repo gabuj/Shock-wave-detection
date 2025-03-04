@@ -4,16 +4,16 @@ import torch.nn.functional as F
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from cnn_architecture import UNet
-from creating_cnn.programs.training_dataset import ShockWaveDataset
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
 import os
 import matplotlib.pyplot as plt
 import json
+from training_dataset import ShockWaveDataset
 
 # Adjustable parameters
 model_path = "creating_cnn/outputs/models/model.pth"
-batch_size = 1
+batch_size = 2
 learning_rate = 1e-4
 num_epochs = 10
 
@@ -39,6 +39,7 @@ train_files, test_files = train_test_split(image_files, test_size=0.1, random_st
 # Create datasets and dataloaders for both train and test
 train_dataset = ShockWaveDataset(images_dir, labels_dir, train_files, transform=transform)
 test_dataset = ShockWaveDataset(images_dir, labels_dir, test_files, transform=transform)
+    
 
 # Save filenames to JSON files so they can be used later
 train_files = list(train_dataset.files)
