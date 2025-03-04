@@ -6,14 +6,16 @@ from skimage import color
 import matplotlib.pyplot as plt
 from image_name import image_name
 
-threshold=0.024
+threshold=0
 
 
 # Load the image
-image_path = "creating_training_set/shockwaves_images/" + image_name + ".jpg"
-result_name = "creating_training_set/temporary_traces/" + image_name + "_shockwave_position_2.png"
+image_path = "creating_training_set/shockwaves_images/simulated_images/" + image_name + ".png"
+result_name = "creating_training_set/temporary_traces/" + image_name + "_shockwave_position_3.png"
 
 image = cv2.imread(image_path)
+
+print("image path is ", image_path)
 
 height, width = image.shape[:2]
 
@@ -29,6 +31,11 @@ sobel_image[sobel_image<threshold]=0
 
 #reconvert sobel to rdg by putting equal values in all channels
 sobel_image = np.stack([sobel_image] * 3, axis=-1)
+
+
+#in case sobel image doesn't work, use image:
+
+image= np.stack([image] * 3, axis=-1)
 
 
 
@@ -110,7 +117,7 @@ cv2.namedWindow("Trace the Shockwave")
 cv2.setMouseCallback("Trace the Shockwave", draw_line)
 
 while True:
-    overlay = sobel_image.copy()
+    overlay = image.copy()
     overlay[mask > 0] = [0, 255, 0]  # Highlight traced parts in green
     cv2.imshow("Trace the Shockwave", overlay)
 

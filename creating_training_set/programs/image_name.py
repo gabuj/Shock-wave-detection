@@ -1,1 +1,1 @@
-image_name = "2005125112851_846"
+image_name = "shockwave_forwardramp5_8"
