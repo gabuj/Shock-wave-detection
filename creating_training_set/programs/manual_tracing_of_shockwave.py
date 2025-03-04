@@ -11,7 +11,7 @@ threshold=0.024
 
 # Load the image
 image_path = "creating_training_set/shockwaves_images/" + image_name + ".jpg"
-result_name = "creating_training_set/temporary_traces/" + image_name + "_shockwave_position_1     .png"
+result_name = "creating_training_set/temporary_traces/" + image_name + "_shockwave_position_2.png"
 
 image = cv2.imread(image_path)
 
