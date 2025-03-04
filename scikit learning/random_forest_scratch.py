@@ -1,37 +1,58 @@
 import cv2
 import numpy as np
+import random
+import os
 import matplotlib.pyplot as plt
+from skimage import filters, color
 
-# Load the image in grayscale
-image_path = "/creating_training_set/schockwaves_images_isedairbos_f7_p5.png"  # Update path if needed
-image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+# Define paths
+trace_dir = "creating_training_set/shockwaves_images/"
+trace_files = os.listdir(trace_dir)
 
-if image is None:
-    print("Error: Could not read the image. Check the file path!")
-    exit()
+threshold = 0.022
+sample_size = 5  # Number of patches to visualize per image
+patch_size = 15  # Change this to 5, 9, 15, etc.
 
-# Apply Scharr filter in X and Y directions
-scharr_x = cv2.Scharr(image, cv2.CV_64F, 1, 0)  # Horizontal edges
-scharr_y = cv2.Scharr(image, cv2.CV_64F, 0, 1)  # Vertical edges
+features = []
+labels = []
 
-# Compute gradient magnitude
-scharr_magnitude = np.sqrt(scharr_x**2 + scharr_y**2)
-scharr_magnitude = np.uint8(scharr_magnitude)  # Convert to uint8 for thresholding
+for image_file in trace_files:
+    image_path = os.path.join(trace_dir, image_file)
+    image = cv2.imread(image_path)
 
-# Apply Otsu's thresholding to create a binary image
-_, scharr_edges = cv2.threshold(scharr_magnitude, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    if image is None:
+        print(f"Skipping {image_file} (could not read)")
+        continue
 
-# Display the results
-plt.figure(figsize=(10, 5))
+    # Convert to grayscale and apply Sobel filter
+    image = color.rgb2gray(image)
+    sobel_image = filters.sobel(image)
 
-plt.subplot(1, 2, 1)
-plt.imshow(image, cmap="gray")
-plt.title("Original Image")
-plt.axis("off")
+    # Threshold edges
+    binary_edges = (sobel_image > threshold).astype(np.uint8)
 
-plt.subplot(1, 2, 2)
-plt.imshow(scharr_edges, cmap="gray")
-plt.title("Scharr Edge Detection (Otsu Threshold)")
-plt.axis("off")
+    height, width = binary_edges.shape
+    fig, axes = plt.subplots(1, sample_size, figsize=(15, 3))  # Create figure for patches
 
-plt.show()
+    offset = patch_size // 2  # Half the patch size to ensure centered selection
+
+    for i in range(sample_size):
+        x, y = random.randint(offset, width - offset - 1), random.randint(offset, height - offset - 1)
+        patch = image[y - offset:y + offset + 1, x - offset:x + offset + 1]  # Extract NxN patch
+
+        if patch.shape == (patch_size, patch_size):  # Ensure correct patch size
+            features.append(patch.flatten())
+            labels.append(binary_edges[y, x])  # 1 for edge, 0 for background
+
+            # Visualize the patch
+            axes[i].imshow(patch, cmap="gray")
+            axes[i].set_title(f"Label: {binary_edges[y, x]}")
+            axes[i].axis("off")
+
+    plt.suptitle(f"Patches from {image_file} (Patch Size: {patch_size}×{patch_size})")
+    plt.show()
+
+X = np.array(features)
+y = np.array(labels)
+
+print(f"Dataset size: {X.shape[0]} samples, each with {X.shape[1]} features.")

@@ -15,9 +15,13 @@ import matplotlib.pyplot as plt
 airbos_f7_p5.jpg
 Blunt_body_reentry_shapes1.png
 '''
+
+
 # Define paths
 trace_dir = "creating_training_set/shockwaves_images/"
 trace_files = os.listdir(trace_dir)
+'''
+---SET THRESHOLD AND LABEL---
 
 threshold = 0.024
 sample_size = 10000  #number of pixels to sample
@@ -57,7 +61,7 @@ y = np.array(labels)
 
 print(f"Dataset size: {X.shape[0]} samples, each with {X.shape[1]} features.")
 
-
+'''
 
 '''model'''
 

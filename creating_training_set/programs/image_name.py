@@ -1,1 +1,1 @@
-image_name = "2005125112851_846"
+image_name = "Blunt_body_reentry_shapes3"
