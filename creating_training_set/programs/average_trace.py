@@ -1,12 +1,11 @@
 import cv2
 import numpy as np
 import os
-
+from image_name import image_name
 # Path to directory with multiple trace images
 trace_dir = "creating_training_set/temporary_traces/"
 trace_files = os.listdir(trace_dir)  # List of all trace files (assumed to be images)
 
-image_name = "200512510409_846"
 result_name = "creating_training_set/calibrated_training_images/" + image_name + ".png"
 
 threshold=127

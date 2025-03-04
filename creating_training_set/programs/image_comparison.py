@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import cv2
 from skimage import color
+from image_name import image_name
 
-image_name="200512510409_846"
 image="creating_training_set/shockwaves_images\\"+image_name + ".jpg"   
-result= "creating_training_set/calibrated_training_images\\"+image_name+".png"
+result= "creating_training_set/calibrated_training_images/" + image_name + ".png"
 
 # Load images
 image = cv2.imread(image, cv2.IMREAD_UNCHANGED)
