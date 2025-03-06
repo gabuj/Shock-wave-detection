@@ -1,1 +1,1 @@
-image_name = "weird_fromarticle1"
+image_name = "cak_colormap_0"
