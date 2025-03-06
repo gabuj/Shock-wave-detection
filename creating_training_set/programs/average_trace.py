@@ -5,6 +5,7 @@ from image_name import image_name
 # Path to directory with multiple trace images
 trace_dir = "creating_training_set/temporary_traces/"
 trace_files = os.listdir(trace_dir)  # List of all trace files (assumed to be images)
+trace_files = [f for f in trace_files if f != '.DS_Store']
 
 result_name = "creating_training_set/calibrated_training_images/" + image_name + ".png"
 
@@ -12,6 +13,7 @@ threshold=127
 
 # Assuming all images are of the same size
 # Initialize an empty array to store the summed pixel values
+print(trace_files)
 first_image = cv2.imread(os.path.join(trace_dir, trace_files[0]), cv2.IMREAD_GRAYSCALE)
 height, width = first_image.shape
 

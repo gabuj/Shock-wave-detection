@@ -1,1 +1,1 @@
-image_name = "shockwave_forwardramp5_8"
+image_name = "weird_fromarticle1"
