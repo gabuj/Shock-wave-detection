@@ -1,12 +1,11 @@
 import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
-import json
 from training_dataset import ShockWaveDataset
-import matplotlib.pyplot as plt
 from torch import nn
 from cnn_architecture import UNet
-from useful_functions import collate_fn
+from useful_functions import evaluate
+from useful_functions import load_filenames
 
 #adjustable parameters
 batch_size = 1
@@ -20,28 +19,21 @@ train_file_path = "creating_cnn/outputs/temporary/train_files.json"
 test_file_path = "creating_cnn/outputs/temporary/test_files.json"
 
 
-
+#Import model
 model_path = "creating_cnn/outputs/models/model.pth"
-# Initialize the model (same architecture as during training)
-model = UNet(pretrained=False)  # No need to load pretrained weights for this case
-# Load the trained weights into the model
-model.load_state_dict(torch.load(model_path))
+model = UNet(pretrained=False)  # Initialize the model 
+model.load_state_dict(torch.load(model_path))# Load the trained weights into the model
 
 
-#acquire data loaders
-
-# Load the filenames from the JSON file
-with open(train_file_path, 'r') as f:
-    train_files = json.load(f)
-
-with open(test_file_path, 'r') as f:
-    test_files = json.load(f)
-
+#GET DATA
 
 # Define the transformations (if any)
 transform = transforms.Compose([
     transforms.ToTensor(),  # Convert image to tensor (0-1 range)
 ])
+
+#acquire filenames
+train_files,test_files= load_filenames(train_file_path,test_file_path)
 
 # Recreate the datasets
 train_dataset = ShockWaveDataset(images_dir, labels_dir, train_files, transform=transform)
@@ -77,43 +69,12 @@ with torch.no_grad():
         loss = criterion(outputs, labels)
         total_loss += loss.item()
 
-
-        # Visualize output
-        #get each image, label, and output from the batch
-        for i in range(inputs.size(0)):
-            input = inputs[i].squeeze().cpu().numpy()
-            output = outputs[i].squeeze().cpu().numpy()
-            label = labels[i].squeeze().cpu().numpy()
-
-            #output=output.float()
-            output = output - output.min()
-            output = output / output.max()
-            output= output*255
-            binary_output = (output > threshold)
-
-
-
-            plt.subplot(1,3,1)
-            plt.imshow(binary_output, cmap='gray')
-            plt.title("Predicted Mask")
-            plt.subplot(1,3,2)
-            plt.imshow(label, cmap='gray')
-            plt.title("Ground Truth")
-            plt.subplot(1,3,3)
-            plt.imshow(input, cmap='gray')
-            plt.title("Input Image")
-            plt.show()
-
-        # Calculate Intersection over Union (IoU) for each image in the batch
-            intersection = (output * label).sum()
-            union = output.sum() + label.sum() - intersection
-            iou = intersection / union
-            iou_scores.append(iou)
-
-        # Print evaluation results
-        avg_loss = total_loss / len(test_dataloader)
-        avg_iou = sum(iou_scores) / len(iou_scores)
+        # Visualize output and calculate iou
+        iou_scores=evaluate(inputs, labels, outputs, iou_scores, threshold, show=1,compare=0)
+        
+# Print evaluation results
+avg_loss = total_loss / len(test_dataloader)
+avg_iou = sum(iou_scores) / len(iou_scores)
 
 print(f"Test Loss: {avg_loss}")
 print(f"Average IoU: {avg_iou}")
-

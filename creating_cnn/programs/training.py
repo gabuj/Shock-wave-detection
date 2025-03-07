@@ -2,16 +2,14 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
-from torch.utils.data import DataLoader
 from cnn_architecture import UNet
-from training_dataset import ShockWaveDataset
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
-import os
-import matplotlib.pyplot as plt
-import json
-from useful_functions import collate_fn
+from useful_functions import evaluate
+from useful_functions import create_dataloader
 import time
+
+
 # Start time
 start_time = time.time()
 # Adjustable parameters
@@ -36,31 +34,7 @@ transform = transforms.Compose([
     transforms.ToTensor(),  # Convert image to tensor (0-1 range)
 ])
 
-image_files = os.listdir(images_dir)  # Path to your images directory
-
-# Split into train and test sets (80% train, 20% test)
-train_files, test_files = train_test_split(image_files, test_size=test_size, random_state=42)
-
-# Create datasets and dataloaders for both train and test
-train_dataset = ShockWaveDataset(images_dir, labels_dir, train_files, transform=transform)
-test_dataset = ShockWaveDataset(images_dir, labels_dir, test_files, transform=transform)
-
-print("acquired datasets")
-
-# Save filenames to JSON files so they can be used later
-train_files = list(train_dataset.files)
-test_files = list(test_dataset.files)
-
-with open(train_file_path, 'w') as f:
-    json.dump(train_files, f)
-
-with open(test_file_path, 'w') as f:
-    json.dump(test_files, f)
-
-# Create DataLoader for both training and testing
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
-test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)  # Test set should NOT shuffle
-
+train_dataloader, test_dataloader=create_dataloader(images_dir, labels_dir,train_file_path,test_file_path,transform, batch_size,test_size)
 print("created dataloaders")
 
 # Initialize the U-Net model
@@ -106,17 +80,17 @@ for epoch in range(num_epochs):
 # Save the trained model
 torch.save(model.state_dict(), model_path)
 print("model saved")
+
+
 # MODEL EVALUATION
-# Set the model to evaluation mode (disable dropout, batch normalization)
-model.eval()
+model.eval() # Set the model to evaluation mode
 
 # Initialize metrics
 total_loss = 0.0    #as before, total loss is the sum of the loss for each batch
 iou_scores = []
 
-# Disable gradient calculation during evaluation
 print("starting evaluation")
-with torch.no_grad():
+with torch.no_grad(): # Disable gradient calculation during evaluation
     for inputs, labels in test_dataloader:
         if torch.cuda.is_available():
             inputs = inputs.cuda()
@@ -129,42 +103,12 @@ with torch.no_grad():
         loss = criterion(outputs, labels)
         total_loss += loss.item()
 
-
-        # Visualize output
-        #get each image, label, and output from the batch
-        for i in range(inputs.size(0)):
-            input = inputs[i].squeeze().cpu().numpy()
-            output = outputs[i].squeeze().cpu().numpy()
-            label = labels[i].squeeze().cpu().numpy()
-
-            #output=output.float()
-            output = output - output.min()
-            output = output / output.max()
-            output= output*255
-            binary_output = (output > threshold)
-
-
-
-            plt.subplot(1,3,1)
-            plt.imshow(binary_output, cmap='gray')
-            plt.title("Predicted Mask")
-            plt.subplot(1,3,2)
-            plt.imshow(label, cmap='gray')
-            plt.title("Ground Truth")
-            plt.subplot(1,3,3)
-            plt.imshow(input, cmap='gray')
-            plt.title("Input Image")
-            plt.show()
-
-        # Calculate Intersection over Union (IoU) for each image in the batch
-            intersection = (output * label).sum()
-            union = output.sum() + label.sum() - intersection
-            iou = intersection / union
-            iou_scores.append(iou)
-
-        # Print evaluation results
-        avg_loss = total_loss / len(test_dataloader)
-        avg_iou = sum(iou_scores) / len(iou_scores)
+# Visualize output and calculate iou
+        iou_scores=evaluate(inputs, labels, outputs, iou_scores, threshold, show=0,compare=0)
+        
+# Print evaluation results
+avg_loss = total_loss / len(test_dataloader)
+avg_iou = sum(iou_scores) / len(iou_scores)
 
 print(f"Test Loss: {avg_loss}")
 print(f"Average IoU: {avg_iou}")
