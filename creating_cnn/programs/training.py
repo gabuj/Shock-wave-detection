@@ -4,16 +4,17 @@ import torch.nn.functional as F
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from cnn_architecture import UNet
-from creating_cnn.programs.training_dataset import ShockWaveDataset
+from training_dataset import ShockWaveDataset
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
 import os
 import matplotlib.pyplot as plt
 import json
+from useful_functions import collate_fn
 
 # Adjustable parameters
 model_path = "creating_cnn/outputs/models/model.pth"
-batch_size = 1
+batch_size = 3
 learning_rate = 1e-4
 num_epochs = 10
 
@@ -51,8 +52,8 @@ with open(test_file_path, 'w') as f:
     json.dump(test_files, f)
 
 # Create DataLoader for both training and testing
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)  # Training set should shuffle
-test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)  # Test set should NOT shuffle
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)  # Test set should NOT shuffle
 
 # Initialize the U-Net model
 model = UNet()
