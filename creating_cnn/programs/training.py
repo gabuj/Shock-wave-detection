@@ -11,12 +11,15 @@ import os
 import matplotlib.pyplot as plt
 import json
 from useful_functions import collate_fn
-
+import time
+# Start time
+start_time = time.time()
 # Adjustable parameters
 model_path = "creating_cnn/outputs/models/model.pth"
-batch_size = 3
+batch_size = 1
 learning_rate = 1e-4
 num_epochs = 10
+test_size=0.2
 
 # Define paths to your image and label directories
 images_dir = "creating_training_set/schockwaves_images_used"
@@ -35,7 +38,7 @@ transform = transforms.Compose([
 image_files = os.listdir(images_dir)  # Path to your images directory
 
 # Split into train and test sets (80% train, 20% test)
-train_files, test_files = train_test_split(image_files, test_size=0.1, random_state=42)
+train_files, test_files = train_test_split(image_files, test_size=test_size, random_state=42)
 
 # Create datasets and dataloaders for both train and test
 train_dataset = ShockWaveDataset(images_dir, labels_dir, train_files, transform=transform)
@@ -97,10 +100,11 @@ for epoch in range(num_epochs):
 
     # Print loss for every epoch
     print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_dataloader)}")
+    print("time since start: ", (time.time()-start_time)/60, " minutes")
 
 # Save the trained model
 torch.save(model.state_dict(), model_path)
-
+print("model saved")
 # MODEL EVALUATION
 # Set the model to evaluation mode (disable dropout, batch normalization)
 model.eval()
@@ -110,6 +114,7 @@ total_loss = 0.0    #as before, total loss is the sum of the loss for each batch
 iou_scores = []
 
 # Disable gradient calculation during evaluation
+print("starting evaluation")
 with torch.no_grad():
     for inputs, labels in test_dataloader:
         if torch.cuda.is_available():
@@ -124,7 +129,7 @@ with torch.no_grad():
         loss = criterion(outputs, labels)
         total_loss += loss.item()
 
-        # Post-process outputs (convert to binary masks)
+        # Post-process outputs (convert to binary masks)        MAYBE WILL NEED TO CHANGE THIS
         binary_output = (outputs > 0.5).float() * 255
 
         # Calculate Intersection over Union (IoU)
@@ -138,6 +143,8 @@ with torch.no_grad():
         plt.imshow(binary_output, cmap='gray')
         plt.imshow(labels.squeeze().cpu().numpy(), cmap='gray', alpha=0.5) #not sure it will work, trying to overlay the ground truth
         plt.show()
+        print("time since start: ", (time.time()-start_time)/60, " minutes")
+        print("evaluated batch number ", len(iou_scores))
         
 # Print evaluation results
 avg_loss = total_loss / len(test_dataloader)
