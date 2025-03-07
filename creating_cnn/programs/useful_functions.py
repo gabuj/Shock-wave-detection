@@ -17,3 +17,13 @@ def collate_fn(batch):
 
     # Stack to create batch
     return torch.stack(padded_images), torch.stack(padded_masks)
+
+#show image:
+import cv2
+import matplotlib.pyplot as plt
+
+
+image_path = 'creating_training_set/schockwaves_images_used/Schlierenfoto_Mach_1-2_gerader_Flügel_-_NASA.jpg'
+image= cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+plt.imshow(image)
+plt.show()

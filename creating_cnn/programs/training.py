@@ -41,6 +41,8 @@ train_files, test_files = train_test_split(image_files, test_size=0.1, random_st
 train_dataset = ShockWaveDataset(images_dir, labels_dir, train_files, transform=transform)
 test_dataset = ShockWaveDataset(images_dir, labels_dir, test_files, transform=transform)
 
+print("acquired datasets")
+
 # Save filenames to JSON files so they can be used later
 train_files = list(train_dataset.files)
 test_files = list(test_dataset.files)
@@ -55,6 +57,8 @@ with open(test_file_path, 'w') as f:
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)  # Test set should NOT shuffle
 
+print("created dataloaders")
+
 # Initialize the U-Net model
 model = UNet()
 if torch.cuda.is_available():
@@ -64,6 +68,7 @@ if torch.cuda.is_available():
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 criterion = nn.BCELoss()  # Binary Cross Entropy loss for binary classification (shock wave vs. non-shock wave)
 
+print("initialized model, optimizer and loss function, now starting training")
 # Training loop
 for epoch in range(num_epochs):
     model.train()  # Set the model to training mode
