@@ -2,14 +2,15 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import json
-from creating_cnn.deprecated_programs.training_dataset_old import ShockWaveDataset
+from training_dataset import ShockWaveDataset
 import matplotlib.pyplot as plt
 from torch import nn
 from cnn_architecture import UNet
+from useful_functions import collate_fn
 
 #adjustable parameters
 batch_size = 1
-
+threshold=10
 
 # Define paths to your image and label directories
 images_dir = "creating_training_set/schockwaves_images_used"
@@ -47,8 +48,8 @@ train_dataset = ShockWaveDataset(images_dir, labels_dir, train_files, transform=
 test_dataset = ShockWaveDataset(images_dir, labels_dir, test_files, transform=transform)
 
 # Recreate the DataLoaders
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn) 
 
 
 
@@ -65,8 +66,9 @@ criterion = nn.BCELoss()  # Binary Cross Entropy loss for binary classification 
 # Disable gradient calculation during evaluation
 with torch.no_grad():
     for inputs, labels in test_dataloader:
-        inputs = inputs.cuda()
-        labels = labels.cuda()
+        if torch.cuda.is_available():
+            inputs = inputs.cuda()
+            labels = labels.cuda()
 
         # Forward pass through the model
         outputs = model(inputs)
@@ -75,23 +77,42 @@ with torch.no_grad():
         loss = criterion(outputs, labels)
         total_loss += loss.item()
 
-        # Post-process outputs (convert to binary masks)
-        binary_output = (outputs > 0.5).float() * 255
 
-        # Calculate Intersection over Union (IoU)
-        intersection = torch.sum(binary_output * labels)
-        union = torch.sum(binary_output) + torch.sum(labels) - intersection
-        iou = intersection / union if union != 0 else 0
-        iou_scores.append(iou.item())
+        # Visualize output
+        #get each image, label, and output from the batch
+        for i in range(inputs.size(0)):
+            input = inputs[i].squeeze().cpu().numpy()
+            output = outputs[i].squeeze().cpu().numpy()
+            label = labels[i].squeeze().cpu().numpy()
 
-        # Optionally visualize output
-        binary_output = binary_output.squeeze().cpu().numpy()  # Remove batch and channel dimensions
-        plt.imshow(binary_output, cmap='gray')
-        plt.show()
+            #output=output.float()
+            output = output - output.min()
+            output = output / output.max()
+            output= output*255
+            binary_output = (output > threshold)
 
-# Print evaluation results
-avg_loss = total_loss / len(test_dataloader)
-avg_iou = sum(iou_scores) / len(iou_scores)
+
+
+            plt.subplot(1,3,1)
+            plt.imshow(binary_output, cmap='gray')
+            plt.title("Predicted Mask")
+            plt.subplot(1,3,2)
+            plt.imshow(label, cmap='gray')
+            plt.title("Ground Truth")
+            plt.subplot(1,3,3)
+            plt.imshow(input, cmap='gray')
+            plt.title("Input Image")
+            plt.show()
+
+        # Calculate Intersection over Union (IoU) for each image in the batch
+            intersection = (output * label).sum()
+            union = output.sum() + label.sum() - intersection
+            iou = intersection / union
+            iou_scores.append(iou)
+
+        # Print evaluation results
+        avg_loss = total_loss / len(test_dataloader)
+        avg_iou = sum(iou_scores) / len(iou_scores)
 
 print(f"Test Loss: {avg_loss}")
 print(f"Average IoU: {avg_iou}")

@@ -20,6 +20,7 @@ batch_size = 1
 learning_rate = 1e-4
 num_epochs = 10
 test_size=0.2
+threshold=10
 
 # Define paths to your image and label directories
 images_dir = "creating_training_set/schockwaves_images_used"
@@ -118,9 +119,8 @@ print("starting evaluation")
 with torch.no_grad():
     for inputs, labels in test_dataloader:
         if torch.cuda.is_available():
-            print("again, nice GPU")
-            inputs = inputs.cuda()  # Move inputs to GPU if available
-            labels = labels.cuda()  # Move labels to GPU if available
+            inputs = inputs.cuda()
+            labels = labels.cuda()
 
         # Forward pass through the model
         outputs = model(inputs)
@@ -129,26 +129,42 @@ with torch.no_grad():
         loss = criterion(outputs, labels)
         total_loss += loss.item()
 
-        # Post-process outputs (convert to binary masks)        MAYBE WILL NEED TO CHANGE THIS
-        binary_output = (outputs > 0.5).float() * 255
 
-        # Calculate Intersection over Union (IoU)
-        intersection = torch.sum(binary_output * labels)
-        union = torch.sum(binary_output) + torch.sum(labels) - intersection
-        iou = intersection / union if union != 0 else 0
-        iou_scores.append(iou.item())
+        # Visualize output
+        #get each image, label, and output from the batch
+        for i in range(inputs.size(0)):
+            input = inputs[i].squeeze().cpu().numpy()
+            output = outputs[i].squeeze().cpu().numpy()
+            label = labels[i].squeeze().cpu().numpy()
 
-        # Optionally visualize output together with the ground truth
-        binary_output = binary_output.squeeze().cpu().numpy()
-        plt.imshow(binary_output, cmap='gray')
-        plt.imshow(labels.squeeze().cpu().numpy(), cmap='gray', alpha=0.5) #not sure it will work, trying to overlay the ground truth
-        plt.show()
-        print("time since start: ", (time.time()-start_time)/60, " minutes")
-        print("evaluated batch number ", len(iou_scores))
-        
-# Print evaluation results
-avg_loss = total_loss / len(test_dataloader)
-avg_iou = sum(iou_scores) / len(iou_scores)
+            #output=output.float()
+            output = output - output.min()
+            output = output / output.max()
+            output= output*255
+            binary_output = (output > threshold)
+
+
+
+            plt.subplot(1,3,1)
+            plt.imshow(binary_output, cmap='gray')
+            plt.title("Predicted Mask")
+            plt.subplot(1,3,2)
+            plt.imshow(label, cmap='gray')
+            plt.title("Ground Truth")
+            plt.subplot(1,3,3)
+            plt.imshow(input, cmap='gray')
+            plt.title("Input Image")
+            plt.show()
+
+        # Calculate Intersection over Union (IoU) for each image in the batch
+            intersection = (output * label).sum()
+            union = output.sum() + label.sum() - intersection
+            iou = intersection / union
+            iou_scores.append(iou)
+
+        # Print evaluation results
+        avg_loss = total_loss / len(test_dataloader)
+        avg_iou = sum(iou_scores) / len(iou_scores)
 
 print(f"Test Loss: {avg_loss}")
 print(f"Average IoU: {avg_iou}")
