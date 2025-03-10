@@ -8,6 +8,9 @@ from torchvision import transforms
 from useful_functions import evaluate
 from useful_functions import create_dataloader
 import time
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from useful_functions import dice_loss
+
 
 
 # Start time
@@ -43,8 +46,10 @@ if torch.cuda.is_available():
     model = model.cuda()  # Move the model to GPU if available, it's faster to train on GPU
 
 # Define optimizer and loss function
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-criterion = nn.BCELoss()  # Binary Cross Entropy loss for binary classification (shock wave vs. non-shock wave)
+optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
+#for criterion use combined BCE and Dice loss
+criterion=nn.BCELoss()
+scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
 
 print("initialized model, optimizer and loss function, now starting training")
 # Training loop
@@ -65,7 +70,7 @@ for epoch in range(num_epochs):
         outputs = model(inputs)
 
         # Compute loss
-        loss = criterion(outputs, labels)
+        loss = nn.BCELoss()(outputs, labels) + dice_loss(outputs, labels)
 
         # Backward pass and optimization
         loss.backward()
@@ -73,9 +78,16 @@ for epoch in range(num_epochs):
 
         running_loss += loss.item()
 
-    # Print loss for every epoch
-    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_dataloader)}")
+    
+
+    avg_train_loss = running_loss / len(train_dataloader)
+    #print loss
+    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_train_loss:.6f}")
     print("time since start: ", (time.time()-start_time)/60, " minutes")
+    # Update the learning rate based on loss
+    scheduler.step(avg_train_loss)
+    print(f"Current Learning Rate: {optimizer.param_groups[0]['lr']:.6f}")
+
 
 # Save the trained model
 torch.save(model.state_dict(), model_path)

@@ -6,6 +6,7 @@ from torch import nn
 from cnn_architecture import UNet
 from useful_functions import evaluate
 from useful_functions import load_filenames
+from useful_functions import collate_fn
 
 #adjustable parameters
 batch_size = 1

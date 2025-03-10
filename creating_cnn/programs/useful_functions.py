@@ -111,3 +111,8 @@ def evaluate(inputs, labels, outputs, iou_scores, threshold, show=0,compare=bool
         temp_iou.append(iou)
     iou_scores.extend(temp_iou)
     return iou_scores
+
+def dice_loss(pred, target, smooth=1.):
+    intersection = (pred * target).sum()
+    dice = (2. * intersection + smooth) / (pred.sum() + target.sum() + smooth)
+    return 1 - dice
