@@ -1,141 +1,91 @@
-import cv2
-import numpy as np
-from skimage import filters, color
 import os
-import random
-from sklearn.model_selection import train_test_split
+import numpy as np
+import cv2
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score, recall_score
-import matplotlib.pyplot as plt
 
-'''#training images path: 
+# Directories
+IMAGE_DIR = "creating_training_set/schockwaves_images_used"
+LABEL_DIR = "creating_training_set/calibrated_training_images"
 
-/Users/andracriscov/Documents/project Y3/repo/creating_training_set/schockwaves_images_used/200512510409_846.jpg
-airbos_f7_p5.jpg
-Blunt_body_reentry_shapes1.png
-'''
+# Image settings
+IMG_WIDTH, IMG_HEIGHT = 400, 400
 
 
-# Define paths
-trace_dir = "creating_training_set/shockwaves_images/"
-trace_files = os.listdir(trace_dir)
-'''
----SET THRESHOLD AND LABEL---
+def load_images(image_dir, label_dir, resize_shape=(400, 400)):
+    """Loads images and their corresponding labels, preprocesses them, and returns feature/label arrays."""
+    image_files = os.listdir(image_dir)
+    X, y = [], []
 
-threshold = 0.024
-sample_size = 10000  #number of pixels to sample
+    for img_file in image_files:
+        img_path = os.path.join(image_dir, img_file)
+        label_path = os.path.join(label_dir, os.path.splitext(img_file)[0] + ".png")
 
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
 
-features = []
-labels = []
+        if img is None or label is None:
+            print(f"Skipping {img_file} due to loading error.")
+            continue
 
-for image_file in trace_files:
-    image_path = os.path.join(trace_dir, image_file)
-    image = cv2.imread(image_path)
+        # Resize both images
+        img = cv2.resize(img, resize_shape)
+        label = cv2.resize(label, resize_shape)
 
-    if image is None:
-        continue
+        # Flatten and append
+        X.extend(img.flatten().reshape(-1, 1))  # Pixel intensity as feature
+        y.extend(label.flatten())  # Corresponding labels
 
-    #convert to grayscale and apply Sobel filter
-    image = color.rgb2gray(image)
-    sobel_image = filters.sobel(image)
+    # Convert lists to NumPy arrays
+    X = np.array(X)
+    y = np.array(y)
 
-    # Threshold edges
-    binary_edges = (sobel_image > threshold).astype(np.uint8)
+    # Convert labels to binary (0 or 1)
+    y = (y > 127).astype(int)
 
-    #randomly selecting pixels for training
-    height, width = binary_edges.shape
-    for _ in range(sample_size):
-        x, y = random.randint(0, width - 1), random.randint(0, height - 1)
-        patch = image[max(0, y - 1): min(height, y + 2), max(0, x - 1): min(width, x + 2)]
-        patch = patch.flatten()
-
-        if len(patch) == 9:  # Ensure full patch size
-            features.append(patch)
-            labels.append(binary_edges[y, x])  # 1 for edge, 0 for background
+    return X, y
 
 
-X = np.array(features)
-y = np.array(labels)
+# Load dataset
+X, y = load_images(IMAGE_DIR, LABEL_DIR, resize_shape=(IMG_WIDTH, IMG_HEIGHT))
+print(f"Dataset size: {X.shape[0]} pixels")
 
-print(f"Dataset size: {X.shape[0]} samples, each with {X.shape[1]} features.")
-
-'''
-
-'''model'''
-
-# Split dataset into training and testing
+# Train/test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# train
-clf = RandomForestClassifier(n_estimators=100, random_state=42)
-clf.fit(X_train, y_train)
+# Train model
+rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+rf.fit(X_train, y_train)
 
-#model performance
-y_pred = clf.predict(X_test)
+# Evaluate model
+y_pred = rf.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
-print(f"Model Accuracy: {accuracy * 100:.2f}%")
+print(f"Model Accuracy: {accuracy:.4f}")
 
 
-def detect_edges(image_path, model, threshold=0.024):
-    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    if image is None:
-        return None
+def test_unseen_image(image_path, model, resize_shape=(400, 400)):
+    """Predicts pixel-wise classification for an unseen image."""
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
-    image = color.rgb2gray(image)
-    height, width = image.shape
-    sobel_image = filters.sobel(image)
+    if img is None:
+        print(f"Error loading image: {image_path}")
+        return
 
-    predicted_mask = np.zeros((height, width), dtype=np.uint8)
+    img = cv2.resize(img, resize_shape)
+    img_flat = img.flatten().reshape(-1, 1)  # Prepare for prediction
 
-    for y in range(1, height - 1):
-        for x in range(1, width - 1):
-            patch = image[y - 1:y + 2, x - 1:x + 2].flatten()
-            if len(patch) == 9:
-                pred = model.predict([patch])[0]
-                predicted_mask[y, x] = 255 if pred == 1 else 0  # White for edges
+    pred = model.predict(img_flat)  # Predict per pixel
+    pred_img = pred.reshape(resize_shape) * 255  # Convert back to image format
 
-    return predicted_mask
+    # Save output
+    output_path = "scikit_learning/output_images/output_1.png"
 
+    pred_img = pred_img.astype(np.uint8)
 
-# Test the model on a new image
-test_image = "/Users/andracriscov/Documents/project Y3/repo/creating_training_set/shockwaves_images/train_1.png"
-predicted_edges = detect_edges(test_image, clf)
-
-print(type(predicted_edges))  # gives type none
-print(predicted_edges.shape)
-
-# Display the result
-plt.imshow(predicted_edges, cmap="gray")
-plt.title("AI-Detected Shockwave Edges")
-plt.show()
-
-#Load manually traced mask
-manual_mask = cv2.imread("/Users/andracriscov/Documents/project Y3/repo/creating_training_set/shockwaves_images/label_1.png", cv2.IMREAD_GRAYSCALE)
-manual_mask = cv2.threshold(manual_mask, 127, 255, cv2.THRESH_BINARY)[1] // 255  # Convert to binary
-
-# Convert AI prediction to binary
-ai_mask = predicted_edges // 255
-
-# Calculate precision and recall
-precision = precision_score(manual_mask.flatten(), ai_mask.flatten())
-recall = recall_score(manual_mask.flatten(), ai_mask.flatten())
-
-#precision = precision_score(ai_mask.flatten())
-#recall = recall_score(ai_mask.flatten())
-
-print(f"Precision: {precision:.2f}, Recall: {recall:.2f}")
+    cv2.imwrite(output_path, pred_img)
+    print(f"Prediction saved to {output_path}")
 
 
-
-
-
-# Display edges for each image
-plt.figure(figsize=(6, 6))
-plt.imshow(binary_edges, cmap="gray")
-plt.title(f"Binary Edges: {image_file}")
-plt.axis("off")
-plt.show()
-
-
+# Test on an unseen image
+test_unseen_image("creating_training_set/shockwaves_images/simulated_images/shockwave_forwardramp3_4.png", rf)

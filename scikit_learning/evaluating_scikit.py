@@ -5,8 +5,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-img_path = '/Users/andracriscov/Documents/project Y3/repo/scikit_learning/output_images/output_1.png'
-img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-
-
-
+y_pred = rf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy:.4f}")
