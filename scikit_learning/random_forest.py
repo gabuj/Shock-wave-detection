@@ -4,7 +4,7 @@ import cv2
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-
+from sklearn.utils.class_weight import compute_class_weight
 # Directories
 IMAGE_DIR = "creating_training_set/schockwaves_images_used"
 LABEL_DIR = "creating_training_set/calibrated_training_images"
@@ -55,14 +55,31 @@ print(f"Dataset size: {X.shape[0]} pixels")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Train model
-rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+class_weights = {0: 1, 1: 20}
+rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1, class_weight=class_weights)
 rf.fit(X_train, y_train)
 
 # Evaluate model
 y_pred = rf.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 print(f"Model Accuracy: {accuracy:.4f}")
+class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+class_weight_dict = dict(zip(np.unique(y_train), class_weights))
 
+print("Class weights:", class_weight_dict)
+
+'''balanced weights gives
+Model Accuracy: 0.4886
+Class weights: {0: 0.5126727374797329, 1: 20.227387267338067}'''
+def apply_sobel_filter(img, resize_shape=(400, 400)):
+    """Apply Sobel filter to the unseen image (edge detection)."""
+    img = cv2.resize(img, resize_shape)
+
+    sobel_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)  # Gradient in x-direction
+    sobel_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)  # Gradient in y-direction
+    sobel_edges = cv2.magnitude(sobel_x, sobel_y)
+
+    return sobel_edges
 
 def test_unseen_image(image_path, model, resize_shape=(400, 400)):
     """Predicts pixel-wise classification for an unseen image."""
@@ -72,9 +89,13 @@ def test_unseen_image(image_path, model, resize_shape=(400, 400)):
         print(f"Error loading image: {image_path}")
         return
 
-    img = cv2.resize(img, resize_shape)
-    img_flat = img.flatten().reshape(-1, 1)  # Prepare for prediction
+    #img = cv2.resize(img, resize_shape)
 
+    sobel_img = apply_sobel_filter(img, resize_shape)
+
+    #img_flat = img.flatten().reshape(-1, 1)  # Prepare for prediction
+
+    img_flat = sobel_img.flatten().reshape(-1, 1)
     pred = model.predict(img_flat)  # Predict per pixel
     pred_img = pred.reshape(resize_shape) * 255  # Convert back to image format
 
@@ -88,4 +109,4 @@ def test_unseen_image(image_path, model, resize_shape=(400, 400)):
 
 
 # Test on an unseen image
-test_unseen_image("creating_training_set/shockwaves_images/simulated_images/shockwave_forwardramp3_4.png", rf)
+test_unseen_image("creating_training_set/shockwaves_images/Harold-E-Edgerton-Bullet-Shock-Wave.jpg", rf)
