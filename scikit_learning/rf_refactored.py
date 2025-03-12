@@ -5,12 +5,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.utils.class_weight import compute_class_weight
-from sklearn.externals import joblib  # To save the model
-
+import joblib  # To save the model
 
 # Directories
 IMAGE_DIR = "creating_training_set/schockwaves_images_used"
 LABEL_DIR = "creating_training_set/calibrated_training_images"
+
 RESULT_IMAGES = ["f4_p3_cam_plane_drop_new_2-22-19.jpg",
                   "cak_colormap_0.jpg", "2005125111210_846.jpg",
                   "Screenshot from 2025-03-03 10-54-31.png",
@@ -18,13 +18,13 @@ RESULT_IMAGES = ["f4_p3_cam_plane_drop_new_2-22-19.jpg",
                   "airbos_f7_p5.jpg", "Screenshot from 2025-03-03 10-53-45.png"]
 
 # Image settings
-IMG_WIDTH, IMG_HEIGHT = 400, 400
+IMG_WIDTH, IMG_HEIGHT = 600, 600
 
 # Create an output folder for the predictions if it doesn't exist
 OUTPUT_FOLDER = "scikit_learning/output_images"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-def load_images(image_dir, label_dir, result_images, resize_shape=(400, 400)):
+def load_images(image_dir, label_dir, result_images, resize_shape=(600, 600)):
     """Loads images and their corresponding labels, preprocesses them, and returns feature/label arrays."""
     image_files = os.listdir(image_dir)
     X, y = [], []
@@ -62,25 +62,17 @@ def load_images(image_dir, label_dir, result_images, resize_shape=(400, 400)):
 
 def train_model(X_train, y_train, class_weights):
     """Trains a RandomForest model with the specified class weights."""
-    rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1, class_weight=class_weights, criterion='entropy')
+    rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1, class_weight=class_weights, criterion='entropy', max_depth = 6)
     rf.fit(X_train, y_train)
     return rf
 
-def save_model(model, edge_weight, filename="random_forest_model"):
+def save_model(model, edge_weight, filename="/Users/andracriscov/Documents/project Y3/repo/scikit_learning/model"):
     """Saves the trained model to a file with the edge weight in the filename."""
     model_filename = f"{filename}_edge_weight_{edge_weight}.pkl"
     joblib.dump(model, model_filename)
     print(f"Model saved as {model_filename}")
 
-def apply_sobel_filter(img, resize_shape=(400, 400)):
-    """Apply Sobel filter to the unseen image (edge detection)."""
-    img = cv2.resize(img, resize_shape)
-    sobel_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)  # Gradient in x-direction
-    sobel_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)  # Gradient in y-direction
-    sobel_edges = cv2.magnitude(sobel_x, sobel_y)
-    return sobel_edges
-
-def test_unseen_image(image_path, model, resize_shape=(400, 400)):
+def test_unseen_image(image_path, model, resize_shape=(600, 600)):
     """Predicts pixel-wise classification for an unseen image."""
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
@@ -88,17 +80,29 @@ def test_unseen_image(image_path, model, resize_shape=(400, 400)):
         print(f"Error loading image: {image_path}")
         return
 
-    # Apply Sobel filter and flatten image for prediction
-    sobel_img = apply_sobel_filter(img, resize_shape)
-    img_flat = sobel_img.flatten().reshape(-1, 1)
+    img_resized = cv2.resize(img, resize_shape)
 
-    # Predict per pixel
+    original_output_path = os.path.join(OUTPUT_FOLDER,
+                                        os.path.splitext(os.path.basename(image_path))[0] + "_original.png")
+    cv2.imwrite(original_output_path, img_resized)
+    print(f"Original resized image saved to {original_output_path}")
+
+    # Resize image and flatten for prediction
+
+    img_flat = img_resized.flatten().reshape(-1, 1)  # Flatten into a single sample
+
     pred = model.predict(img_flat)  # Predict per pixel
-    pred_img = pred.reshape(resize_shape) * 255  # Convert back to image format
+    pred_img = pred.reshape(resize_shape) * 255
+
+    # Predict probabilities for class 1 (edge class)
+    #y_prob = model.predict_proba(img_flat)[:, 1]  # Get the probability of class 1 (edge)
+
+    # Reshape the prediction to match the image shape
 
     # Save output
-    output_path = os.path.join(OUTPUT_FOLDER, os.path.basename(image_path))
+    output_path = os.path.join(OUTPUT_FOLDER, os.path.splitext(os.path.basename(image_path))[0] + ".png")
     pred_img = pred_img.astype(np.uint8)
+
     cv2.imwrite(output_path, pred_img)
     print(f"Prediction saved to {output_path}")
 
@@ -117,12 +121,12 @@ print(np.unique(y))
 print(f"Dataset size: {X.shape[0]} pixels")
 
 # Train/test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
 print(f"Training data size: {X_train.shape}")
 print(f"Testing data size: {X_test.shape}")
 
 # Train model with class weights
-edge_weight = 10.0  # You can experiment with different edge weights
+edge_weight = 22.0  # You can experiment with different edge weights
 class_weights = {0: 1, 1: edge_weight}
 rf_model = train_model(X_train, y_train, class_weights)
 
@@ -134,10 +138,10 @@ for img_path in RESULT_IMAGES:
     print(f"Testing on {img_path}...")
     pred_img = test_unseen_image(os.path.join(IMAGE_DIR, img_path), rf_model)
 
-    # Compute and print log loss for this result image
-    y_true = cv2.imread(os.path.join(LABEL_DIR, os.path.splitext(img_path)[0] + ".png"), cv2.IMREAD_GRAYSCALE)
-    y_true = (y_true > 127).astype(int).flatten()
-    y_prob = rf_model.predict_proba(pred_img.flatten().reshape(1, -1))[:, 1]  # Predict probabilities
+    # Compute and print log loss for this result imagE
 
-    log_loss_val = compute_weighted_log_loss(y_true, y_prob, edge_weight)
-    print(f"Log Loss for {img_path}: {log_loss_val:.4f}")
+    y_pred = rf_model.predict_proba(X_test)[:, 1]
+    weighted_log_loss = compute_weighted_log_loss(y_test, y_pred, edge_weight)
+
+
+    print(f"Log Loss for {img_path}: {weighted_log_loss:.4f}")
