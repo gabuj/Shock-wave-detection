@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from training_dataset import ShockWaveDataset
 from torch import nn
-from cnn_architecture import UNet
+from cnn_architecture_new import UNet
 from useful_functions import evaluate
 from useful_functions import load_filenames
 from useful_functions import collate_fn
@@ -45,7 +45,6 @@ train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn) 
 
 
-
 # Set the model to evaluation mode (disable dropout, batch normalization)
 model.eval()
 
@@ -71,7 +70,7 @@ with torch.no_grad():
         total_loss += loss.item()
 
         # Visualize output and calculate iou
-        iou_scores=evaluate(inputs, labels, outputs, iou_scores, threshold, show=1,compare=0)
+        iou_scores=evaluate(inputs, labels, outputs, iou_scores, threshold, show=0,compare=1)
         
 # Print evaluation results
 avg_loss = total_loss / len(test_dataloader)

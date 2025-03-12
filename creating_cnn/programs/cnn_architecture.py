@@ -1,10 +1,8 @@
 import torch
 import torch.nn as nn
-from torchvision import models
 
 import torch
 import torch.nn as nn
-import torchvision.models as models
 import torch.nn.functional as F
 from torchvision.models import resnet18, ResNet18_Weights
 

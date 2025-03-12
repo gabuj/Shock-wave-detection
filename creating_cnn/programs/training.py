@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
-from cnn_architecture import UNet
+from cnn_architecture_new import UNet
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
 from useful_functions import evaluate
@@ -47,9 +47,12 @@ if torch.cuda.is_available():
 
 # Define optimizer and loss function
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
-#for criterion use combined BCE and Dice loss
-criterion=nn.BCELoss()
-scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
+#for criterion use combined weighted cross entropy loss
+weights = torch.tensor([1.0, 10.0], dtype=torch.float32)  # Class 0: Non-edge, Class 1: Edge
+
+# Define the loss function with class weights
+criterion = nn.CrossEntropyLoss(weight=weights)
+scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
 print("initialized model, optimizer and loss function, now starting training")
 # Training loop
@@ -70,7 +73,7 @@ for epoch in range(num_epochs):
         outputs = model(inputs)
 
         # Compute loss
-        loss = nn.BCELoss()(outputs, labels) + dice_loss(outputs, labels)
+        loss = nn.BCELoss()(outputs, labels)# + dice_loss(outputs, labels)
 
         # Backward pass and optimization
         loss.backward()
