@@ -40,7 +40,7 @@ class ShockWaveDataset(Dataset):
 
         # Convert to tensor
         image = torch.tensor(image, dtype=torch.float32).unsqueeze(0) / 255.0
-        label = torch.tensor(label, dtype=torch.float32).unsqueeze(0)  # Binary mask
+        label = torch.tensor(label, dtype=torch.long)  # Shape: [height, width]
 
         return image, label
 

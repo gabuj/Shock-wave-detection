@@ -11,6 +11,8 @@ from useful_functions import collate_fn
 #adjustable parameters
 batch_size = 1
 threshold=10
+edge_weight=10.0
+
 
 # Define paths to your image and label directories
 images_dir = "creating_training_set/schockwaves_images_used"
@@ -52,7 +54,10 @@ model.eval()
 total_loss = 0.0
 iou_scores = []
 
-criterion = nn.BCELoss()  # Binary Cross Entropy loss for binary classification (shock wave vs. non-shock wave)
+weights = torch.tensor([1.0, edge_weight], dtype=torch.float32)  # Class 0: Non-edge, Class 1: Edge
+
+# Define the loss function with class weights
+criterion = nn.CrossEntropyLoss(weight=weights)
 
 
 # Disable gradient calculation during evaluation
@@ -64,6 +69,8 @@ with torch.no_grad():
 
         # Forward pass through the model
         outputs = model(inputs)
+
+
 
         # Calculate loss
         loss = criterion(outputs, labels)

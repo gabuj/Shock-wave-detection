@@ -22,6 +22,8 @@ learning_rate = 1e-4
 num_epochs = 10
 test_size=0.2
 threshold=10
+edge_weight=10.0
+
 
 # Define paths to your image and label directories
 images_dir = "creating_training_set/schockwaves_images_used"
@@ -48,7 +50,7 @@ if torch.cuda.is_available():
 # Define optimizer and loss function
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 #for criterion use combined weighted cross entropy loss
-weights = torch.tensor([1.0, 10.0], dtype=torch.float32)  # Class 0: Non-edge, Class 1: Edge
+weights = torch.tensor([1.0, edge_weight], dtype=torch.float32)  # Class 0: Non-edge, Class 1: Edge
 
 # Define the loss function with class weights
 criterion = nn.CrossEntropyLoss(weight=weights)
@@ -72,8 +74,10 @@ for epoch in range(num_epochs):
         # Forward pass
         outputs = model(inputs)
 
+        #add num classes to labels:
+
         # Compute loss
-        loss = nn.BCELoss()(outputs, labels)# + dice_loss(outputs, labels)
+        loss = criterion(outputs, labels)# + dice_loss(outputs, labels)
 
         # Backward pass and optimization
         loss.backward()

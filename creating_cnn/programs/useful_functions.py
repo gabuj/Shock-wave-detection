@@ -17,12 +17,18 @@ def collate_fn(batch):
     max_height = max(img.shape[1] for img in images)
     max_width = max(img.shape[2] for img in images)
 
-    # Pad all images and masks to the same size
+    # Pad all images to the same size
     padded_images = [F.pad(img, (0, max_width - img.shape[2], 0, max_height - img.shape[1])) for img in images]
-    padded_masks = [F.pad(mask, (0, max_width - mask.shape[2], 0, max_height - mask.shape[1])) for mask in masks]
+
+    # Pad masks: The labels should have shape [batch_size, height, width] with class indices
+    padded_masks = [F.pad(mask, (0, max_width - mask.shape[1], 0, max_height - mask.shape[0])) for mask in masks]
 
     # Stack to create batch
-    return torch.stack(padded_images), torch.stack(padded_masks)
+    # Convert images and masks into a tensor (ensure they are torch tensors)
+    padded_images = torch.stack(padded_images)  # Shape: [batch_size, 1, H, W] for grayscale images
+    padded_masks = torch.stack(padded_masks)  # Shape: [batch_size, H, W] for class indices
+
+    return padded_images, padded_masks
 
 #show image:
 import cv2
@@ -100,7 +106,13 @@ def evaluate(inputs, labels, outputs, iou_scores, threshold, show=0,compare=bool
         input = inputs[i].squeeze().cpu().numpy()
         label = labels[i].squeeze().cpu().numpy()
 
-        output = outputs[i].squeeze().cpu().numpy()
+        # Convert logits to probabilities using softmax
+        output_probs = F.softmax(outputs[i], dim=1)  # Shape: [1, 2, H, W]
+
+        # Select the most probable class (argmax over the 2 channels)
+        predicted_mask = torch.argmax(output_probs, dim=1)  # Shape: [1, H, W]
+        # output = outputs[i].squeeze().cpu().numpy()
+        output = predicted_mask.squeeze().cpu().numpy()
         output = output - output.min()
         output = output / output.max()
         output= output*255
