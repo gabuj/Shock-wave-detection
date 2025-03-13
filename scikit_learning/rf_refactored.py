@@ -108,6 +108,45 @@ def test_unseen_image(image_path, model, resize_shape=(600, 600)):
 
     return pred_img
 
+def test_unseen_image_2(image_path, model, resize_shape=(600, 600)):
+    """Predicts pixel-wise classification for an unseen image."""
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+    if img is None:
+        print(f"Error loading image: {image_path}")
+        return
+
+    # Save original image (without resizing) to the output folder
+    original_output_path = os.path.join(OUTPUT_FOLDER,
+                                        os.path.splitext(os.path.basename(image_path))[0] + "_original.png")
+    cv2.imwrite(original_output_path, img)
+    print(f"Original image saved to {original_output_path}")
+
+    # Resize the image to the required input size for prediction
+    img_resized = cv2.resize(img, resize_shape)
+
+    # Flatten and predict
+    img_flat = img_resized.flatten().reshape(-1, 1)  # Flatten into a single sample
+    pred = model.predict(img_flat)  # Predict per pixel
+    pred_img = pred.reshape(resize_shape) * 255  # Rescale to 0-255 range for image saving
+
+    # Save the predicted image (in resized form)
+    #resized_output_path = os.path.join(OUTPUT_FOLDER,
+    #                                   os.path.splitext(os.path.basename(image_path))[0] + "_pred_resized.png")
+    #pred_img = pred_img.astype(np.uint8)
+    #cv2.imwrite(resized_output_path, pred_img)
+    #print(f"Prediction saved (resized) to {resized_output_path}")
+
+    # Save the predicted image in the original image size
+    pred_img_original_size = cv2.resize(pred_img, (img.shape[1], img.shape[0]))
+    original_size_output_path = os.path.join(OUTPUT_FOLDER,
+                                             os.path.splitext(os.path.basename(image_path))[0] + "_pred_original.png")
+    cv2.imwrite(original_size_output_path, pred_img_original_size)
+    print(f"Prediction saved (original size) to {original_size_output_path}")
+
+    return pred_img
+
+
 def compute_weighted_log_loss(y_true, y_prob, edge_weight=10.0):
     """Computes weighted log loss (cross-entropy) using scikit-learn."""
     weights = np.where(y_true == 1, edge_weight, 1.0)
@@ -136,7 +175,7 @@ save_model(rf_model, edge_weight)
 # Test the trained model on the result images
 for img_path in RESULT_IMAGES:
     print(f"Testing on {img_path}...")
-    pred_img = test_unseen_image(os.path.join(IMAGE_DIR, img_path), rf_model)
+    pred_img = test_unseen_image_2(os.path.join(IMAGE_DIR, img_path), rf_model)
 
     # Compute and print log loss for this result imagE
 
@@ -144,4 +183,5 @@ for img_path in RESULT_IMAGES:
     weighted_log_loss = compute_weighted_log_loss(y_test, y_pred, edge_weight)
 
 
-    print(f"Log Loss for {img_path}: {weighted_log_loss:.4f}")
+    print(f"Log Loss : {weighted_log_loss:.4f}")
+
