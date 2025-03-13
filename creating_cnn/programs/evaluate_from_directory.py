@@ -18,7 +18,6 @@ edge_weight=1
 dir = "creating_cnn/evaluation_images/random_forest"
 labels_dir = "creating_training_set/calibrated_training_images"
 
-
 #GET DATA
 
 # Define the transformations (if any)
@@ -31,8 +30,7 @@ test_files = os.listdir(dir)
 test_dataset = ShockWaveDataset(dir, labels_dir, test_files, transform=transform)
 
 # Recreate the DataLoaders
-test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn) 
-
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
 
 # Initialize metrics
