@@ -227,10 +227,10 @@ for img_path in RESULT_IMAGES:
     y_pred_tensor = torch.tensor(y_pred, dtype=torch.float32)
 
     weights = torch.ones_like(y_test_tensor)  # Default weight = 1 for all pixels
-    weights[y_test_tensor == 1] = 1  # Apply higher weight to positive class (edges)
+    weights[y_test_tensor == 1] = 10  # Apply higher weight to positive class (edges)
 
     # Compute Binary Cross-Entropy (BCE) Loss
-    criterion = torch.nn.BCELoss()
+    criterion = torch.nn.BCELoss(weight = weights)
     loss = criterion(y_pred_tensor, y_test_tensor)
     total_loss += loss.item()
 
