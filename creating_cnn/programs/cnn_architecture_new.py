@@ -32,7 +32,7 @@ class UNet(nn.Module):
             nn.ReLU(inplace=True),
             #output layer, size should match:(torch.Size([1, 1, 334, 409])), 
             #keeping in mind: output_size = floor((input_size + 2 * padding - kernel_size) / stride) + 1
-            nn.ConvTranspose2d(64, 2, kernel_size=4, stride=2, padding=1)
+            nn.ConvTranspose2d(64, 1, kernel_size=4, stride=2, padding=1)
         )
         
     def forward(self, x): #x is the input image

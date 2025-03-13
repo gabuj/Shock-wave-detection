@@ -11,7 +11,7 @@ from useful_functions import collate_fn
 #adjustable parameters
 batch_size = 1
 threshold=10
-edge_weight=10.0
+edge_weight=10
 
 
 # Define paths to your image and label directories
@@ -54,10 +54,10 @@ model.eval()
 total_loss = 0.0
 iou_scores = []
 
-weights = torch.tensor([1.0, edge_weight], dtype=torch.float32)  # Class 0: Non-edge, Class 1: Edge
+weights = torch.tensor([edge_weight], dtype=torch.float32)
 
 # Define the loss function with class weights
-criterion = nn.CrossEntropyLoss(weight=weights)
+criterion = nn.BCELoss(weight=weights)
 
 
 # Disable gradient calculation during evaluation

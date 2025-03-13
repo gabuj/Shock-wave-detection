@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 import json
 import os
 from torch.utils.data import DataLoader
+from skimage import filters
 
 
 def collate_fn(batch):
@@ -21,7 +22,7 @@ def collate_fn(batch):
     padded_images = [F.pad(img, (0, max_width - img.shape[2], 0, max_height - img.shape[1])) for img in images]
 
     # Pad masks: The labels should have shape [batch_size, height, width] with class indices
-    padded_masks = [F.pad(mask, (0, max_width - mask.shape[1], 0, max_height - mask.shape[0])) for mask in masks]
+    padded_masks = [F.pad(mask, (0, max_width - mask.shape[2], 0, max_height - mask.shape[1])) for mask in masks]
 
     # Stack to create batch
     # Convert images and masks into a tensor (ensure they are torch tensors)
@@ -106,13 +107,14 @@ def evaluate(inputs, labels, outputs, iou_scores, threshold, show=0,compare=bool
         input = inputs[i].squeeze().cpu().numpy()
         label = labels[i].squeeze().cpu().numpy()
 
-        # Convert logits to probabilities using softmax
-        output_probs = F.softmax(outputs[i], dim=1)  # Shape: [1, 2, H, W]
+        # # Convert logits to probabilities using softmax
+        # output_probs = F.softmax(outputs[i], dim=1)  # Shape: [1, 2, H, W]
+        # # Select the most probable class (argmax over the 2 channels)
+        # predicted_mask = torch.argmax(output_probs, dim=0)  # Shape: [1, H, W]
+        # output = predicted_mask.cpu().numpy()
 
-        # Select the most probable class (argmax over the 2 channels)
-        predicted_mask = torch.argmax(output_probs, dim=1)  # Shape: [1, H, W]
-        # output = outputs[i].squeeze().cpu().numpy()
-        output = predicted_mask.squeeze().cpu().numpy()
+        output = outputs[i].squeeze().cpu().numpy()
+
         output = output - output.min()
         output = output / output.max()
         output= output*255
@@ -133,3 +135,29 @@ def dice_loss(pred, target, smooth=1.):
     intersection = (pred * target).sum()
     dice = (2. * intersection + smooth) / (pred.sum() + target.sum() + smooth)
     return 1 - dice
+
+
+
+def compute_sobel(input_tensor):
+    """
+    Computes the Sobel edge detection on a grayscale input image tensor.
+    Args:
+        input_tensor: Tensor of shape [batch, 1, height, width] with values in [0,1].
+    Returns:
+        sobel_image: Tensor of the same shape containing Sobel-filtered edges.
+    """
+    # Ensure input is float and has 4D shape [batch, 1, H, W]
+    if input_tensor.ndim == 3:  # If shape is [1, H, W], add batch dimension
+        input_tensor = input_tensor.unsqueeze(0)
+    
+    input = input_tensor.squeeze().cpu().numpy()
+    sobel_image=filters.sobel(input)
+
+
+    # Normalize to [0,1] for visualization
+    sobel_image = (sobel_image - sobel_image.min()) / (sobel_image.max() - sobel_image.min())
+
+    #reconvert to tensor
+    sobel_image = torch.tensor(sobel_image, dtype=torch.float32).unsqueeze(0)
+    sobel_image = sobel_image.unsqueeze(0)
+    return sobel_image

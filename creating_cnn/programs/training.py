@@ -18,11 +18,11 @@ start_time = time.time()
 # Adjustable parameters
 model_path = "creating_cnn/outputs/models/model.pth"
 batch_size = 1
-learning_rate = 1e-4
+learning_rate = 5e-4
 num_epochs = 10
 test_size=0.2
 threshold=10
-edge_weight=10.0
+edge_weight=2
 
 
 # Define paths to your image and label directories
@@ -50,10 +50,10 @@ if torch.cuda.is_available():
 # Define optimizer and loss function
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 #for criterion use combined weighted cross entropy loss
-weights = torch.tensor([1.0, edge_weight], dtype=torch.float32)  # Class 0: Non-edge, Class 1: Edge
+weights = torch.tensor([edge_weight], dtype=torch.float32)
 
 # Define the loss function with class weights
-criterion = nn.CrossEntropyLoss(weight=weights)
+criterion = nn.BCELoss(weight=weights)
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
 print("initialized model, optimizer and loss function, now starting training")
