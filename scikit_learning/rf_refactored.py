@@ -129,16 +129,19 @@ def test_unseen_image_2(image_path, model, resize_shape=(600, 600)):
     img_flat = img_resized.flatten().reshape(-1, 1)  # Flatten into a single sample
     pred = model.predict(img_flat)  # Predict per pixel
     pred_img = pred.reshape(resize_shape) * 255  # Rescale to 0-255 range for image saving
+    pred_img = pred_img.astype(np.uint8)
 
     # Save the predicted image (in resized form)
     #resized_output_path = os.path.join(OUTPUT_FOLDER,
     #                                   os.path.splitext(os.path.basename(image_path))[0] + "_pred_resized.png")
-    #pred_img = pred_img.astype(np.uint8)
+
     #cv2.imwrite(resized_output_path, pred_img)
     #print(f"Prediction saved (resized) to {resized_output_path}")
 
     # Save the predicted image in the original image size
+    print('line 141', pred_img.shape, img.shape[1], img.shape[0])
     pred_img_original_size = cv2.resize(pred_img, (img.shape[1], img.shape[0]))
+
     original_size_output_path = os.path.join(OUTPUT_FOLDER,
                                              os.path.splitext(os.path.basename(image_path))[0] + "_pred_original.png")
     cv2.imwrite(original_size_output_path, pred_img_original_size)
@@ -165,7 +168,7 @@ print(f"Training data size: {X_train.shape}")
 print(f"Testing data size: {X_test.shape}")
 
 # Train model with class weights
-edge_weight = 22.0  # You can experiment with different edge weights
+edge_weight = 21.0  # You can experiment with different edge weights
 class_weights = {0: 1, 1: edge_weight}
 rf_model = train_model(X_train, y_train, class_weights)
 
