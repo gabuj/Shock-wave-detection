@@ -140,6 +140,7 @@ def test_unseen_image_2(image_path, model, resize_shape=(600, 600)):
 
     # Save the predicted image in the original image size
     print('line 141', pred_img.shape, img.shape[1], img.shape[0])
+
     pred_img_original_size = cv2.resize(pred_img, (img.shape[1], img.shape[0]))
 
     original_size_output_path = os.path.join(OUTPUT_FOLDER,
@@ -156,6 +157,20 @@ def compute_weighted_log_loss(y_true, y_prob, edge_weight=10.0):
     loss = log_loss(y_true, y_prob, sample_weight=weights)
     return loss
 
+
+def compute_iou(y_true, y_pred, threshold=0.5):
+    """
+    Compute IoU (Intersection over Union) for binary classification.
+    """
+    y_pred_binary = (y_pred > threshold).astype(int)  # Threshold predictions
+    intersection = (y_true & y_pred_binary).sum()
+    union = (y_true | y_pred_binary).sum()
+
+    if union == 0:
+        return 1.0  # Perfect IoU case (both empty)
+
+    return intersection / union
+
 # Load dataset and exclude result images
 X, y = load_images(IMAGE_DIR, LABEL_DIR, RESULT_IMAGES, resize_shape=(IMG_WIDTH, IMG_HEIGHT))
 print(np.unique(y))
@@ -163,18 +178,18 @@ print(np.unique(y))
 print(f"Dataset size: {X.shape[0]} pixels")
 
 # Train/test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 print(f"Training data size: {X_train.shape}")
 print(f"Testing data size: {X_test.shape}")
 
 # Train model with class weights
-edge_weight = 21.0  # You can experiment with different edge weights
+edge_weight = 22.0  # You can experiment with different edge weights
 class_weights = {0: 1, 1: edge_weight}
 rf_model = train_model(X_train, y_train, class_weights)
 
 # Save the trained model
 save_model(rf_model, edge_weight)
-
+'''
 # Test the trained model on the result images
 for img_path in RESULT_IMAGES:
     print(f"Testing on {img_path}...")
@@ -188,3 +203,45 @@ for img_path in RESULT_IMAGES:
 
     print(f"Log Loss : {weighted_log_loss:.4f}")
 
+'''
+
+import torch
+import torch.nn.functional as F
+import numpy as np
+
+# Test the trained model on the result images
+total_loss = 0.0
+iou_scores = []
+
+for img_path in RESULT_IMAGES:
+    print(f"Testing on {img_path}...")
+
+    # Get prediction
+    pred_img = test_unseen_image_2(os.path.join(IMAGE_DIR, img_path), rf_model)
+
+    # Compute prediction probabilities for test set
+    y_pred = rf_model.predict_proba(X_test)[:, 1]
+
+    # Convert NumPy arrays to PyTorch tensors
+    y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
+    y_pred_tensor = torch.tensor(y_pred, dtype=torch.float32)
+
+    weights = torch.ones_like(y_test_tensor)  # Default weight = 1 for all pixels
+    weights[y_test_tensor == 1] = 10  # Apply higher weight to positive class (edges)
+
+    # Compute Binary Cross-Entropy (BCE) Loss
+    criterion = torch.nn.BCELoss(weight = weights)
+    loss = criterion(y_pred_tensor, y_test_tensor)
+    total_loss += loss.item()
+
+    # Compute IoU for each sample
+    for i in range(len(y_test)):
+        iou = compute_iou(y_test[i], y_pred[i], threshold=10)
+        iou_scores.append(iou)
+
+# Compute and print final metrics
+avg_loss = total_loss / len(RESULT_IMAGES)
+avg_iou = sum(iou_scores) / len(iou_scores)
+
+print(f"Final Test BCE Loss: {avg_loss:.4f}")
+print(f"Final Average IoU: {avg_iou:.4f}")

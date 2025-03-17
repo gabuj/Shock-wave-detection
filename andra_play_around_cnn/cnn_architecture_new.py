@@ -41,4 +41,4 @@ class UNet(nn.Module):
         # Resize output to match target labels
         x2 = F.interpolate(x2, size=x.shape[2:], mode='bilinear', align_corners=False)
         
-        return torch.sigmoid(x2)  # Sigmoid activation for binary mask output
+        return x2  # Sigmoid activation for binary mask output
