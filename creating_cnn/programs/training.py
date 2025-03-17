@@ -42,10 +42,24 @@ transform = transforms.Compose([
 train_dataloader, test_dataloader=create_dataloader(images_dir, labels_dir,train_file_path,test_file_path,transform, batch_size,test_size)
 print("created dataloaders")
 
-# Initialize the U-Net model
-model = UNet()
-if torch.cuda.is_available():
-    model = model.cuda()  # Move the model to GPU if available, it's faster to train on GPU
+# # Initialize the U-Net model
+# model = UNet()
+# if torch.cuda.is_available():
+#     model = model.cuda()  # Move the model to GPU if available, it's faster to train on GPU
+
+#define device
+if torch.backends.mps.is_available():
+    device = "mps"  # Use Apple's Metal (MPS) acceleration
+elif torch.cuda.is_available():
+    device = "cuda"  # Use CUDA if available (for NVIDIA GPUs)
+else:
+    device = "cpu"  # Fallback to CPU
+
+print(f"Using device: {device}")
+
+#initialize model to device
+model=UNet().to(device)
+
 
 # Define optimizer and loss function
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
@@ -68,7 +82,11 @@ for epoch in range(num_epochs):
             print("you must have a nice GPU")
             inputs = inputs.cuda()  # Move inputs to GPU if available
             labels = labels.cuda()  # Move labels to GPU if available
-
+        elif torch.backends.mps.is_available():
+            print("you must have a nice apple computer")
+            inputs = inputs.mps()   # Move inputs to Apple's Metal (MPS) acceleration if available
+            labels = labels.cuda()  # Move labels to Apple's Metal (MPS) acceleration if available
+        
         optimizer.zero_grad()  # Zero the gradients before each step
 
         # Forward pass
