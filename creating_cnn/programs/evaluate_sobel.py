@@ -11,7 +11,7 @@ from useful_functions import compute_sobel
 #adjustable parameters
 batch_size = 1
 threshold=10
-edge_weight=2
+edge_weight=1
 
 
 # Define paths to your image and label directories
@@ -63,7 +63,7 @@ for inputs, labels in test_dataloader:
     total_loss += loss.item()
 
     # Visualize output and calculate iou
-    iou_scores=evaluate(inputs, labels, sobel_image, iou_scores, threshold, show=0,compare=0)
+    iou_scores=evaluate(inputs, labels, sobel_image, iou_scores, threshold, show=1,compare=0)
     
 # Print evaluation results
 avg_loss = total_loss / len(test_dataloader)

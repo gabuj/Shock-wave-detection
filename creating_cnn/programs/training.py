@@ -18,7 +18,7 @@ start_time = time.time()
 # Adjustable parameters
 model_path = "creating_cnn/outputs/models/model.pth"
 batch_size = 1
-learning_rate = 5e-4
+learning_rate = 1e-4
 num_epochs = 10
 test_size=0.2
 threshold=10

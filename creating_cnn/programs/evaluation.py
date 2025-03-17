@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from training_dataset import ShockWaveDataset
 from torch import nn
-from cnn_architecture_new import UNet
+from cnn_architecture import UNet
 from useful_functions import evaluate
 from useful_functions import load_filenames
 from useful_functions import collate_fn
@@ -11,7 +11,7 @@ from useful_functions import collate_fn
 #adjustable parameters
 batch_size = 1
 threshold=10
-edge_weight=10
+edge_weight=1
 
 
 # Define paths to your image and label directories
@@ -23,7 +23,7 @@ test_file_path = "creating_cnn/outputs/temporary/test_files.json"
 
 
 #Import model
-model_path = "creating_cnn/outputs/models/model.pth"
+model_path = "creating_cnn/outputs/models/model_80_BCE.pth"
 model = UNet(pretrained=False)  # Initialize the model 
 model.load_state_dict(torch.load(model_path))# Load the trained weights into the model
 
@@ -77,7 +77,7 @@ with torch.no_grad():
         total_loss += loss.item()
 
         # Visualize output and calculate iou
-        iou_scores=evaluate(inputs, labels, outputs, iou_scores, threshold, show=0,compare=1)
+        iou_scores=evaluate(inputs, labels, outputs, iou_scores, threshold, show=1,compare=0)
         
 # Print evaluation results
 avg_loss = total_loss / len(test_dataloader)
