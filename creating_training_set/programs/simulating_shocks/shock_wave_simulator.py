@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
+from image_shapes import image_shapes
+import random
 
 # Image dimensions
-width, height = 500, 100
+width, height = random.choice(image_shapes)
 
 # Define densities
 rho1 = 1.0  # Upstream density

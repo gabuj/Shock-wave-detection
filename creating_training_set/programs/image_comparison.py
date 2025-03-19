@@ -17,7 +17,8 @@ image = color.rgb2gray(image)
 #normalise the image
 image=image/image.max()
 #normalise the result
-
+plt.imshow(image,cmap='gray')
+plt.show()
 result=result/result.max()
 
 #change result dtype to match image

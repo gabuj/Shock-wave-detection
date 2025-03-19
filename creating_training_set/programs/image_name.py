@@ -1,1 +1,1 @@
-image_name = "cak_colormap_0"
+image_name = "Harold-E-Edgerton-Bullet-Shock-Wave"
