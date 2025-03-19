@@ -11,6 +11,8 @@ import time
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from useful_functions import dice_loss
 
+import os
+os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = str(0.8)
 
 
 # Start time
@@ -19,11 +21,10 @@ start_time = time.time()
 model_path = "creating_cnn/outputs/models/model_001.pth"
 batch_size = 1
 learning_rate = 1e-4
-num_epochs = 10
-test_size=0.2
-threshold=10
-edge_weight=2
-
+num_epochs = 5
+test_size = 0.2
+threshold = 10
+edge_weight = 2
 
 # Define paths to your image and label directories
 images_dir = "creating_training_set/schockwaves_images_used"
@@ -39,17 +40,17 @@ transform = transforms.Compose([
     transforms.ToTensor(),  # Convert image to tensor (0-1 range)
 ])
 
-train_dataloader, test_dataloader=create_dataloader(images_dir, labels_dir,train_file_path,test_file_path,transform, batch_size,test_size)
+train_dataloader, test_dataloader = create_dataloader(images_dir, labels_dir, train_file_path, test_file_path,
+                                                      transform, batch_size, test_size)
 print("created dataloaders")
 
 # Initialize the U-Net model
 model = UNet()
-if torch.cuda.is_available():
-    model = model.cuda()  # Move the model to GPU if available, it's faster to train on GPU
+
 
 # Define optimizer and loss function
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
-#for criterion use combined weighted cross entropy loss
+# for criterion use combined weighted cross entropy loss
 weights = torch.tensor([edge_weight], dtype=torch.float32)
 
 # Define the loss function with class weights
@@ -58,77 +59,64 @@ scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
 print("initialized model, optimizer and loss function, now starting training")
 
-
-#device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 # Training loop
 for epoch in range(num_epochs):
     model.train()  # Set the model to training mode
-    running_loss = 0.0  #running loss is the loss for the current epoch
-    #model.to(device)
+    running_loss = 0.0  # running loss is the loss for the current epoch
+    model.to(device)
 
     # Loop through the dataloader
     for inputs, labels in train_dataloader:
-        #inputs, labels = inputs.to(device), labels.to(device)
-
-        if torch.cuda.is_available():
-            print("you must have a nice GPU")
-            inputs = inputs.cuda()  # Move inputs to GPU if available
-            labels = labels.cuda()  # Move labels to GPU if available
-
-
-
+        inputs, labels = inputs.to(device), labels.to(device)
+        #inputs, labels = inputs.to(device).to(torch.float16), labels.to(device).to(torch.float16)
         optimizer.zero_grad()  # Zero the gradients before each step
 
         # Forward pass
         outputs = model(inputs)
 
-        #add num classes to labels:
+        # add num classes to labels:
 
-
-        #outputs = outputs.to(torch.float32)  # Ensure dtype matches loss requirements
-        #labels = labels.to(torch.float32)
-        #loss = torch.nn.functional.binary_cross_entropy(outputs, labels)
+        outputs = outputs.to(torch.float32)  # Ensure dtype matches loss requirements
+        labels = labels.to(torch.float32)
+        loss = torch.nn.functional.binary_cross_entropy(outputs, labels)
 
         # Compute loss
-        loss = criterion(outputs, labels)# + dice_loss(outputs, labels)
-
+        loss = criterion(outputs, labels)  # + dice_loss(outputs, labels)
 
         # Backward pass and optimization
         loss.backward()
         optimizer.step()
-
+        #loss
         running_loss += loss.item()
-
-    
+        #clear cpu cache
+        torch.mps.empty_cache()
 
     avg_train_loss = running_loss / len(train_dataloader)
-    #print loss
+    # print loss
     print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_train_loss:.6f}")
-    print("time since start: ", (time.time()-start_time)/60, " minutes")
+    print("time since start: ", (time.time() - start_time) / 60, " minutes")
     # Update the learning rate based on loss
     scheduler.step(avg_train_loss)
     print(f"Current Learning Rate: {optimizer.param_groups[0]['lr']:.6f}")
-
 
 # Save the trained model
 torch.save(model.state_dict(), model_path)
 print("model saved")
 
-
 # MODEL EVALUATION
-model.eval() # Set the model to evaluation mode
+model.eval()  # Set the model to evaluation mode
 
 # Initialize metrics
-total_loss = 0.0    #as before, total loss is the sum of the loss for each batch
+total_loss = 0.0  # as before, total loss is the sum of the loss for each batch
 iou_scores = []
 
 print("starting evaluation")
-with torch.no_grad(): # Disable gradient calculation during evaluation
+with torch.no_grad():  # Disable gradient calculation during evaluation
     for inputs, labels in test_dataloader:
-        if torch.cuda.is_available():
-            inputs = inputs.cuda()
-            labels = labels.cuda()
+
+        inputs, labels = inputs.to(device), labels.to(device)
 
         # Forward pass through the model
         outputs = model(inputs)
@@ -137,9 +125,9 @@ with torch.no_grad(): # Disable gradient calculation during evaluation
         loss = criterion(outputs, labels)
         total_loss += loss.item()
 
-# Visualize output and calculate iou
-        iou_scores=evaluate(inputs, labels, outputs, iou_scores, threshold, show=0,compare=0)
-        
+        # Visualize output and calculate iou
+        iou_scores = evaluate(inputs, labels, outputs, iou_scores, threshold, show=0, compare=0)
+
 # Print evaluation results
 avg_loss = total_loss / len(test_dataloader)
 avg_iou = sum(iou_scores) / len(iou_scores)
