@@ -17,7 +17,7 @@ class UNet(nn.Module):
 
 
         # Extract feature layers (HED uses up to Conv5)
-        self.encoder = vgg.features[:30]  # Up to the last convolutional layer before FC
+        self.encoder = vgg.features[:24]  # Up to the last convolutional layer before FC
 
         # Modify first conv layer for grayscale input (1 channel instead of 3)
         self.encoder[0] = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
