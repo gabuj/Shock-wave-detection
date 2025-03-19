@@ -17,8 +17,8 @@ possible_mach_numbers=[1.01,2,3,4,5,6,7,8,9,10]
 Dt_possible_values=[0.05,0.06,0.07,0.5,1,1.5,2,2.5,3,3.5,4]
 possible_rho_object=[1,1.2,1.5,1.8,2,2.2,2.5]
 #image destinations
-image_baseline_path="creating_training_set/simulation_images/simulated_schock_"
-target_baseline_path="creating_training_set/target_simulation_images/simulated_schock_"
+image_baseline_path="creating_training_set/simulation_images/simulated_flat_schock_"
+target_baseline_path="creating_training_set/target_simulation_images/simulated_flat_schock_"
 
 
 #define functions
@@ -207,9 +207,7 @@ while True:
     M1 = random.choice(possible_mach_numbers)    # Upstream Mach number   RANDOMISE BETWEEN 1.01 AND 10
     current_parameters.append(M1)
     # Parameters for shock front modeling
-    alpha=random.uniform(0.2, np.pi/2) #Randomise from 0.2 to np.pi/2
-    alpha=round(alpha,1)
-    current_parameters.append(alpha)
+    alpha=np.pi/2 #Randomise from 0.2 to np.pi/2
     tan_alpha = np.tan(alpha)  # Slope of shock     
 
     # Noise and diffusion parameters
@@ -238,9 +236,8 @@ while True:
 
     #create triangles
     # rho_object=[rho2*1.1-rho2*1.5] --> define later
-    n=random.randint(1,6) #randomise between 1 and 6
+    n=0 #randomise between 1 and 6
     
-    current_parameters.append(n)
     inloop=True
     while inloop == True:
         x_end  = random.randint(int(shock_centre_x+width*0.05), int(width*0.75))  # Object width (5%-100%)  RANDOMISE
