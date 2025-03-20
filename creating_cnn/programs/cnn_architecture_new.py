@@ -17,23 +17,24 @@ class UNet(nn.Module):
 
 
         # Extract feature layers (HED uses up to Conv5)
-        self.encoder = vgg.features[:24]  # Up to the last convolutional layer before FC
+        self.encoder = vgg.features[:28]  # Up to the last convolutional layer before FC
 
         # Modify first conv layer for grayscale input (1 channel instead of 3)
         self.encoder[0] = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
         
         # Decoder: Deconvolution layers to reconstruct the output to input size
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(512, 256, kernel_size=3, stride=2, padding=1),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1),
             nn.ReLU(inplace=True),
-            #output layer, size should match:(torch.Size([1, 1, 334, 409])), 
+            #output layer, size should match:(torch.Size([1, 1, 334, 409])),
             #keeping in mind: output_size = floor((input_size + 2 * padding - kernel_size) / stride) + 1
             nn.ConvTranspose2d(64, 1, kernel_size=4, stride=2, padding=1)
-        )
+            )
+
         
     def forward(self, x): #x is the input image
         x1 = self.encoder(x)  # Pass input through encoder (modified ResNet18)

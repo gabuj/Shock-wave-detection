@@ -10,15 +10,17 @@ from useful_functions import create_dataloader
 import time
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from useful_functions import dice_loss
-
+from torch.cuda.amp import autocast
 import os
-os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = str(0.8)
-
+#os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = str(0.8)
+import os
+#os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.8"
+torch.set_num_threads(7)
 
 # Start time
 start_time = time.time()
 # Adjustable parameters
-model_path = "creating_cnn/outputs/models/model_001.pth"
+model_path = "creating_cnn/outputs/models/model_002.pth"
 batch_size = 1
 learning_rate = 1e-4
 num_epochs = 5
@@ -34,6 +36,7 @@ train_file_path = "creating_cnn/outputs/temporary/train_files.json"
 test_file_path = "creating_cnn/outputs/temporary/test_files.json"
 
 # CREATE DATA LOADER
+device = torch.device("cpu" )
 
 # Define the transformations (if any)
 transform = transforms.Compose([
@@ -45,21 +48,21 @@ train_dataloader, test_dataloader = create_dataloader(images_dir, labels_dir, tr
 print("created dataloaders")
 
 # Initialize the U-Net model
-model = UNet()
+model = UNet().to(device)
 
 
 # Define optimizer and loss function
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 # for criterion use combined weighted cross entropy loss
-weights = torch.tensor([edge_weight], dtype=torch.float32)
+weights = torch.tensor([edge_weight], dtype=torch.float32, device='cpu')
 
 # Define the loss function with class weights
-criterion = nn.BCELoss(weight=weights)
+criterion = nn.BCELoss(weight=weights).to('cpu')
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
 print("initialized model, optimizer and loss function, now starting training")
 
-device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+
 
 # Training loop
 for epoch in range(num_epochs):
@@ -74,24 +77,22 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()  # Zero the gradients before each step
 
         # Forward pass
+         # Mixed precision
         outputs = model(inputs)
+        outputs = outputs.to(torch.float32)  # Ensure correct dtype for loss
 
-        # add num classes to labels:
+        # Move outputs & labels to CPU before computing loss
+        loss = criterion(outputs, labels)
 
-        outputs = outputs.to(torch.float32)  # Ensure dtype matches loss requirements
-        labels = labels.to(torch.float32)
-        loss = torch.nn.functional.binary_cross_entropy(outputs, labels)
-
+        #loss = torch.nn.functional.binary_cross_entropy(outputs, labels)
         # Compute loss
-        loss = criterion(outputs, labels)  # + dice_loss(outputs, labels)
-
         # Backward pass and optimization
         loss.backward()
         optimizer.step()
         #loss
         running_loss += loss.item()
         #clear cpu cache
-        torch.mps.empty_cache()
+        #torch.mps.empty_cache()
 
     avg_train_loss = running_loss / len(train_dataloader)
     # print loss
