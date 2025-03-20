@@ -9,6 +9,10 @@ import cv2
 
 #number of images
 num_images= 3
+
+
+
+
 rho1 = 1.0  # Upstream density
 gamma = 1.4 # Specific heat ratio
 
@@ -400,3 +404,7 @@ while True:
     vars_to_delete = [var for var in locals().keys() if var not in keep_vars and var !='keep_vars']
     for var in vars_to_delete:
         del locals()[var]
+
+
+#fake variable to run program
+run_shock_waves_oblique=0
