@@ -16,7 +16,7 @@ from useful_functions import dice_loss
 # Start time
 start_time = time.time()
 # Adjustable parameters
-model_path = "creating_cnn/outputs/models/model_A.pth"
+model_path = "creating_cnn/outputs/models/model_B.pth"
 batch_size = 1
 learning_rate = 1e-4
 num_epochs = 5

@@ -18,7 +18,7 @@ image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
 
 #acquire model
 
-model_path = "creating_cnn/outputs/models/model.pth"
+model_path = "creating_cnn/outputs/models/model_B.pth"
 # Initialize the model (same architecture as during training)
 model = UNet(pretrained=False)  # No need to load pretrained weights for this case
 # Load the trained weights into the model
