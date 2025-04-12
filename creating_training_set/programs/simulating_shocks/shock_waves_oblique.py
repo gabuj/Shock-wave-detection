@@ -8,7 +8,7 @@ from PIL import Image
 import cv2
 
 #number of images
-num_images= 3
+num_images= 15
 
 
 
@@ -226,7 +226,8 @@ while True:
     steps=(end_random-start_random)//10
     steps = steps if steps>0 else 1
 
-    last_gaussian_convolution_sigma = random.randrange(start_random,end_random,steps)  # (1,17,4)Standard deviation for Gaussian smoothing    RANDOMISE FROM 1 TO 17
+    #last_gaussian_convolution_sigma = random.randrange(start_random,end_random,steps)  # (1,17,4)Standard deviation for Gaussian smoothing    RANDOMISE FROM 1 TO 17
+    last_gaussian_convolution_sigma=random.randrange(0,2)
     current_parameters.append(last_gaussian_convolution_sigma)
     
     Dt = width * random.choice(Dt_possible_values)  # Diffusion coefficient and time   RANDOMISE 0.05 and 4
