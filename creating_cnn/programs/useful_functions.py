@@ -49,6 +49,9 @@ def write_json_file(train_file_path,test_file_path, train_files,test_files):
 
 def create_dataloader(images_dir, labels_dir,train_file_path,test_file_path,transform, batch_size,test_size):
     # Split into train and test sets (80% train, 20% test)
+    print("Looking for images in:", images_dir)
+    print("Absolute path:", os.path.abspath(images_dir))
+
     image_files = os.listdir(images_dir)  # Path to your images directory
 
 

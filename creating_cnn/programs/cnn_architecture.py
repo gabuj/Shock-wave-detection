@@ -15,21 +15,33 @@ class UNet(nn.Module):
         resnet = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         
         # Modify ResNet's first conv layer to accept grayscale images (1 channel), maybe change kernel size to 3 and padding to 1?
-        resnet.conv1 = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=7, stride=1, padding=3)
+        resnet.conv1 = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=7, stride=2, padding=3)
 
-        self.encoder = nn.Sequential(*list(resnet.children())[:-2])  # Remove the last two layers
-        
+        #self.encoder = nn.Sequential(*list(resnet.children())[:-2])  # Remove the last two layers
+
+        self.encoder = nn.Sequential(
+            resnet.conv1,  # -> 64 channels
+            resnet.bn1,
+            resnet.relu,
+            resnet.maxpool,  # -> downsampled
+
+            resnet.layer1,  # -> 64 channels
+            resnet.layer2,  # -> 128 channels
+            resnet.layer3  # -> 256 channels
+        )
+
+
         # Decoder: Deconvolution layers to reconstruct the output to input size
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(inplace=True),
             nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
             nn.ReLU(inplace=True),
             nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),
             nn.ReLU(inplace=True),
-            #output layer, size should match:(torch.Size([1, 1, 334, 409])), 
+            #output layer, size should match:(torch.Size([1, 1, 334, 409])),
             #keeping in mind: output_size = floor((input_size + 2 * padding - kernel_size) / stride) + 1
-            nn.ConvTranspose2d(64, 1, kernel_size=4, stride=2, padding=1)
+            nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(32, 1, kernel_size=4, stride=2, padding=1)
         )
         
     def forward(self, x): #x is the input image
