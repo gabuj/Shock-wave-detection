@@ -15,15 +15,15 @@ edge_weight=1
 
 
 # Define paths to your image and label directories
-images_dir = "creating_training_set/schockwaves_images_used"
-labels_dir = "creating_training_set/calibrated_training_images"
+images_dir = "creating_cnn/light_inputs"
+labels_dir = "creating_cnn/light_targets"
 
 train_file_path = "creating_cnn/outputs/temporary/train_files.json"
 test_file_path = "creating_cnn/outputs/temporary/test_files.json"
 
 
 #Import model
-model_path = "creating_cnn/outputs/models/model_80_BCE.pth"
+model_path = "creating_cnn/outputs/models/model_B.pth"
 model = UNet(pretrained=False)  # Initialize the model 
 model.load_state_dict(torch.load(model_path))# Load the trained weights into the model
 
@@ -77,7 +77,7 @@ with torch.no_grad():
         total_loss += loss.item()
 
         # Visualize output and calculate iou
-        iou_scores=evaluate(inputs, labels, outputs, iou_scores, threshold, show=1,compare=0)
+        iou_scores=evaluate(inputs, labels, outputs, iou_scores, threshold, show=0,compare=1)
         
 # Print evaluation results
 avg_loss = total_loss / len(test_dataloader)

@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
-from cnn_architecture_new import UNet
+from cnn_architecture import UNet
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
 from useful_functions import evaluate
@@ -19,15 +19,15 @@ start_time = time.time()
 model_path = "creating_cnn/outputs/models/model_B.pth"
 batch_size = 1
 learning_rate = 1e-4
-num_epochs = 5
+num_epochs = 10
 test_size=0.2
 threshold=10
 edge_weight=8
 
 
 # Define paths to your image and label directories
-images_dir = "creating_training_set/schockwaves_images_used"
-labels_dir = "creating_training_set/calibrated_training_images"
+images_dir = "creating_cnn/light_inputs"
+labels_dir = "creating_cnn/light_targets"
 
 train_file_path = "creating_cnn/outputs/temporary/train_files.json"
 test_file_path = "creating_cnn/outputs/temporary/test_files.json"
@@ -72,8 +72,9 @@ scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
 print("initialized model, optimizer and loss function, now starting training")
 # Training loop
+model.train()  # Set the model to training mode
 for epoch in range(num_epochs):
-    model.train()  # Set the model to training mode
+    
     running_loss = 0.0  #running loss is the loss for the current epoch
 
     # Loop through the dataloader
@@ -85,7 +86,7 @@ for epoch in range(num_epochs):
         elif torch.backends.mps.is_available():
             print("you must have a nice apple computer")
             inputs = inputs.mps()   # Move inputs to Apple's Metal (MPS) acceleration if available
-            labels = labels.cuda()  # Move labels to Apple's Metal (MPS) acceleration if available
+            labels = labels.mps()  # Move labels to Apple's Metal (MPS) acceleration if available
         
         optimizer.zero_grad()  # Zero the gradients before each step
 

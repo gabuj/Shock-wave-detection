@@ -8,7 +8,7 @@ from PIL import Image
 import cv2
 
 #number of images
-num_images= 15
+num_images= 120
 
 
 
@@ -21,9 +21,11 @@ possible_mach_numbers=[1.01,2,3,4,5,6,7,8,9,10]
 Dt_possible_values=[0.05,0.06,0.07,0.5,1,1.5,2,2.5,3,3.5,4]
 possible_rho_object=[1,1.2,1.5,1.8,2,2.2,2.5]
 #image destinations
-image_baseline_path="creating_training_set/simulation_images/simulated_schock_"
-target_baseline_path="creating_training_set/target_simulation_images/simulated_schock_"
+# image_baseline_path="creating_training_set/simulation_images/simulated_schock_"
+# target_baseline_path="creating_training_set/target_simulation_images/simulated_schock_"
 
+image_baseline_path = "creating_cnn/light_inputs/simulated_schock_"
+target_baseline_path = "creating_cnn/light_targets/simulated_schock_"
 
 #define functions
 def add_triangle_touching_shock(n,d_n,density, shock_position, rho_max, x_end, y_top, y_bottom):
