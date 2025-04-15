@@ -8,7 +8,7 @@ from PIL import Image
 import cv2
 
 #number of images
-num_images= 120
+num_images= 520
 
 
 
@@ -217,7 +217,6 @@ while True:
     alpha=round(alpha,1)
     current_parameters.append(alpha)
     tan_alpha = np.tan(alpha)  # Slope of shock     
-
     # Noise and diffusion parameters
     noise_level = rho1 / random.randrange(3,39,4)  # Adjust as needed     RANDOMISE FROM 3 to 40
     current_parameters.append(noise_level)
@@ -234,7 +233,6 @@ while True:
     
     Dt = width * random.choice(Dt_possible_values)  # Diffusion coefficient and time   RANDOMISE 0.05 and 4
     current_parameters.append(Dt)
-
     centre_image = [height // 2, width // 2]  # Center of the image
     shock_centre_x=width//2
     shock_centre_y=height//2
@@ -246,7 +244,6 @@ while True:
     #create triangles
     # rho_object=[rho2*1.1-rho2*1.5] --> define later
     n=random.randint(1,6) #randomise between 1 and 6
-    
     current_parameters.append(n)
     inloop=True
     while inloop == True:
@@ -254,12 +251,10 @@ while True:
         y_top  = random.randint(shock_centre_y+height // 100, shock_centre_y+height // 3)  # Object height top  RANDOMISE
         y_bottom = random.randint(shock_centre_y-height // 3, shock_centre_y-height // 100)  # Object height bottom RANDOMISE
         cat1=abs(x_end-shock_centre_x)
-
-        if abs(y_top-shock_centre_y)/cat1>tan_alpha:
+        if abs(y_top-shock_centre_y)/cat1>abs(tan_alpha):
             continue
-        if abs(y_bottom-shock_centre_y)/cat1<=tan_alpha:
+        if abs(y_bottom-shock_centre_y)/cat1<=abs(tan_alpha):
             inloop=False
-
     current_parameters.append(x_end)
     current_parameters.append(y_top)
     current_parameters.append(y_bottom)
@@ -271,7 +266,6 @@ while True:
     # Calculate downstream density using Rankine-Hugoniot relation
     conv_factor=((gamma + 1) * M1**2) / ((gamma - 1) * M1**2 + 2)
     rho2 = conv_factor * rho1
-
     #rho object
     rho_object=rho2*random.choice(possible_rho_object) #RANDOMISE from rho2*(from 1 to 3)   
     current_parameters.append(rho_object)
@@ -283,7 +277,6 @@ while True:
 
     used_parameters.append(current_parameters)
     cycle_n +=1
-    
     # Create base density field
     density=0 #set to 0
     density = np.ones((height, width)) * rho1

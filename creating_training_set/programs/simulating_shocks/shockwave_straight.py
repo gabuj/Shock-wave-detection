@@ -8,7 +8,7 @@ from PIL import Image
 import cv2
 
 #number of images
-num_images= 30
+num_images= 230
 
 
 
@@ -252,9 +252,9 @@ while True:
         y_bottom = random.randint(shock_centre_y-height // 3, shock_centre_y-height // 100)  # Object height bottom RANDOMISE
         cat1=abs(x_end-shock_centre_x)
 
-        if abs(y_top-shock_centre_y)/cat1>tan_alpha:
+        if abs(y_top-shock_centre_y)/cat1>abs(tan_alpha):
             continue
-        if abs(y_bottom-shock_centre_y)/cat1<=tan_alpha:
+        if abs(y_bottom-shock_centre_y)/cat1<=abs(tan_alpha):
             inloop=False
 
     current_parameters.append(x_end)
