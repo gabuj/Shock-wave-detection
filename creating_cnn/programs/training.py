@@ -2,32 +2,36 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
-from cnn_architecture_new import UNet, combined_loss
-from sklearn.model_selection import train_test_split
+from cnn_architecture_new import UNet 
+from useful_functions import combined_loss
+# from sklearn.model_selection import train_test_split
 from torchvision import transforms
-from useful_functions import evaluate
+# from useful_functions import evaluate
 from useful_functions import create_dataloader
 import time
 import numpy as np
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+from torch.optim.lr_scheduler import OneCycleLR  # Changed from CosineAnnealingWarmRestarts
 
 # Start time
 start_time = time.time()
 
 # Adjustable parameters - OTTIMIZZATI
 model_path = "creating_cnn/outputs/models/model_datasetTest.pth"
-batch_size = 1  # Aumentato da 1 a 8 per stabilizzare l'addestramento
-learning_rate = 1e-4
-num_epochs = 5  # Aumentato da 10 a 50 per un addestramento più lungo
+batch_size = 3  # Aumentato da 1 a 8 per stabilizzare l'addestramento
+base_learning_rate = 1e-4  # Base learning rate (peak will be higher with OneCycleLR
+max_lr=base_learning_rate * 15
+
+num_epochs = 10
 test_size = 0.2
-val_size = 0.1  # Aggiunto set di validazione
-threshold = 0.5  # Ridotto a un valore più tipico per la segmentazione
-bce_weight = 0.7  # will have to discover
-fp_weight=0.5 #lower it to counting too many false positives! (output too white!)
-gamma_focal=2 #will have to discover
-patience = 10  # Per early stopping
+
+bce_weight = 0.5  # will have to discover
+fp_weight=0.7 # 0.7 badish, 0.5 same, 1 worse
+
+gamma_focal=1 #will have to discover
+patience = 6  # Per early stopping
 
 # Define paths to your image and label directories
 images_dir = "creating_cnn/lightest_inputs"
@@ -72,16 +76,27 @@ print(f"Using device: {device}")
 # Initialize model to device
 model = UNet().to(device)
 
-# Ottimizzatore migliorato con maggiore regolarizzazione
-optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+# Improved optimizer with weight decay regularization
+optimizer = optim.AdamW(model.parameters(), lr=base_learning_rate, weight_decay=1e-4)
 
-# Scheduler migliorato con cosine annealing
-scheduler = CosineAnnealingWarmRestarts(
-    optimizer, 
-    T_0=10,        # Periodo del primo restart
-    T_mult=2,      # Moltiplica T_0 ad ogni restart
-    eta_min=1e-6   # LR minimo
+## ===== OPTIMIZED LEARNING RATE SCHEDULER =====
+# Using OneCycleLR for dynamic learning rate adjustment
+scheduler = OneCycleLR(
+    optimizer,
+    max_lr=max_lr,  # Peak learning rate is 10x base
+    steps_per_epoch=len(train_dataloader),
+    epochs=num_epochs,
+    pct_start=0.3,  # 30% of training for warmup phase
+    anneal_strategy='cos',  # Cosine annealing for smooth decay
+    div_factor=25,  # Initial learning rate = max_lr/div_factor (lower than base)
+    final_div_factor=1000,  # Final learning rate = initial_lr/final_div_factor
 )
+
+# Function to track learning rates
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
+
 
 # Funzione di early stopping
 def early_stopping(val_losses, patience=5, min_delta=0.01):
@@ -102,36 +117,44 @@ val_losses = []
 best_val_loss = float('inf')
 best_model_path = model_path.replace('.pth', '_best.pth')
 
+
 # Training loop
 model.train()  # Set the model to training mode
 
 for epoch in range(num_epochs):
     model.train()  # Set to training mode for each epoch
     running_loss = 0.0
-    
+    batch_lr = []  # Track LR for each batch
+
     # Loop through the training dataloader
     for inputs, labels in train_dataloader:
         inputs = inputs.to(device)
         labels = labels.to(device)
         
+        # Track learning rate
+        batch_lr.append(get_lr(optimizer))
         optimizer.zero_grad()  # Zero the gradients
         
         # Forward pass
         outputs = model(inputs)
         
         # Compute loss usando la funzione di loss combinata
-        loss = combined_loss(outputs, labels, bce_weight=bce_weight,fp_weight=fp_weight, gamma=gamma_focal)
+        loss = combined_loss(outputs, labels, bce_weight=bce_weight, fp_weight=fp_weight, gamma=gamma_focal)
+
         
         # Backward pass and optimization
         loss.backward()
         optimizer.step()
+        
+        # Step the scheduler after each batch (OneCycleLR is designed to update per batch)
+        scheduler.step()
         
         running_loss += loss.item()
     
     # Calcola la loss media per questa epoca
     avg_train_loss = running_loss / len(train_dataloader)
     train_losses.append(avg_train_loss)
-    
+
     # Validazione
     model.eval()  # Set the model to evaluation mode
     val_loss = 0.0
@@ -141,15 +164,12 @@ for epoch in range(num_epochs):
             labels = labels.to(device)
             
             outputs = model(inputs)
-            loss = combined_loss(outputs, labels, bce_weight=0.7)
+            loss = combined_loss(outputs, labels, bce_weight=bce_weight, fp_weight=fp_weight, gamma=gamma_focal)
             val_loss += loss.item()
     
     avg_val_loss = val_loss / len(test_dataloader)
     val_losses.append(avg_val_loss)
-    
-    # Aggiorna lo scheduler
-    scheduler.step()
-    
+        
     # Stampa le statistiche
     print(f"Epoch {epoch + 1}/{num_epochs}, Train Loss: {avg_train_loss:.6f}, Val Loss: {avg_val_loss:.6f}, LR: {optimizer.param_groups[0]['lr']:.6f}")
     print(f"Time since start: {(time.time()-start_time)/60:.2f} minutes")
