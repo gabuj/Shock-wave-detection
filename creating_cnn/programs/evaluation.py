@@ -9,7 +9,7 @@ from useful_functions import load_filenames
 from useful_functions import collate_fn
 
 #adjustable parameters
-batch_size = 1
+batch_size = 4
 threshold=10
 edge_weight=1
 

@@ -22,13 +22,14 @@ start_time = time.time()
 model_path = "creating_cnn/outputs/models/model_datasetTest.pth"
 batch_size = 3  # Aumentato da 1 a 8 per stabilizzare l'addestramento
 base_learning_rate = 1e-4  # Base learning rate (peak will be higher with OneCycleLR
-max_lr=base_learning_rate * 15
+max_lr=base_learning_rate * 2
+min_learning_rate=base_learning_rate / 10  # Minimum learning rate after annealing
 
 num_epochs = 10
 test_size = 0.2
 
 bce_weight = 0.5  # will have to discover
-fp_weight=0.7 # 0.7 badish, 0.5 same, 1 worse
+fp_weight=0.7 # 0.6 bad, 0.7 badish, 0.5 same,0.8 same 0.9 white, 1 worse, 1.2 white, 1.4 white, 1.6 black
 
 gamma_focal=1 #will have to discover
 patience = 6  # Per early stopping
@@ -80,16 +81,26 @@ model = UNet().to(device)
 optimizer = optim.AdamW(model.parameters(), lr=base_learning_rate, weight_decay=1e-4)
 
 ## ===== OPTIMIZED LEARNING RATE SCHEDULER =====
-# Using OneCycleLR for dynamic learning rate adjustment
-scheduler = OneCycleLR(
+# # Using OneCycleLR for dynamic learning rate adjustment
+# scheduler = OneCycleLR(
+#     optimizer,
+#     max_lr=max_lr,  # Peak learning rate is 10x base
+#     steps_per_epoch=len(train_dataloader),
+#     epochs=num_epochs,
+#     pct_start=0.3,  # 30% of training for warmup phase
+#     anneal_strategy='cos',  # Cosine annealing for smooth decay
+#     div_factor=25,  # Initial learning rate = max_lr/div_factor (lower than base)
+#     final_div_factor=1000,  # Final learning rate = initial_lr/final_div_factor
+# )
+
+
+## ===== OPTIMIZED LEARNING RATE SCHEDULER - CosineAnnealingWarmRestarts =====
+scheduler = CosineAnnealingWarmRestarts(
     optimizer,
-    max_lr=max_lr,  # Peak learning rate is 10x base
-    steps_per_epoch=len(train_dataloader),
-    epochs=num_epochs,
-    pct_start=0.3,  # 30% of training for warmup phase
-    anneal_strategy='cos',  # Cosine annealing for smooth decay
-    div_factor=25,  # Initial learning rate = max_lr/div_factor (lower than base)
-    final_div_factor=1000,  # Final learning rate = initial_lr/final_div_factor
+    T_0=5,  # Number of iterations for the first restart (adjustable)
+    T_mult=2,  # Factor by which the number of iterations is multiplied after each restart
+    eta_min=min_learning_rate,  # Minimum learning rate after annealing
+    last_epoch=-1
 )
 
 # Function to track learning rates
