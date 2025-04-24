@@ -17,21 +17,21 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 start_time = time.time()
 
 # Adjustable parameters - OTTIMIZZATI
-model_path = "creating_cnn/outputs/models/model_datasetTest.pth"
+model_path = "creating_cnn/outputs/models/model_A_i.pth"
 batch_size = 1  # Aumentato da 1 a 8 per stabilizzare l'addestramento
 learning_rate = 1e-4
-num_epochs = 5  # Aumentato da 10 a 50 per un addestramento più lungo
+num_epochs = 10  # Aumentato da 10 a 50 per un addestramento più lungo
 test_size = 0.2
 val_size = 0.1  # Aggiunto set di validazione
 threshold = 0.5  # Ridotto a un valore più tipico per la segmentazione
-bce_weight = 0.7  # will have to discover
-fp_weight=0.5 #lower it to counting too many false positives! (output too white!)
+bce_weight = 1  # will have to discover
+fp_weight=0.5    #lower it to counting too many false positives! (output too white!)
 gamma_focal=2 #will have to discover
 patience = 10  # Per early stopping
 
 # Define paths to your image and label directories
-images_dir = "creating_cnn/lightest_inputs"
-labels_dir = "creating_cnn/light_targets"
+images_dir = "creating_training_set/schockwaves_images_used_resized"
+labels_dir = "creating_training_set/calibrated_training_images_resized"
 
 train_file_path = "creating_cnn/outputs/temporary/train_files.json"
 test_file_path = "creating_cnn/outputs/temporary/test_files.json"
@@ -177,5 +177,5 @@ plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.title('Training and Validation Loss')
 plt.legend()
-plt.savefig('creating_cnn/outputs/loss_curves.png')
-print("Loss curves saved to 'creating_cnn/outputs/loss_curves.png'")
+plt.savefig('creating_cnn/outputs/loss_curves_A_i.png')
+print("Loss curves saved to 'creating_cnn/outputs/loss_curves_A_i.png'")

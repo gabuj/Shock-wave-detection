@@ -6,6 +6,8 @@ import json
 import os
 from torch.utils.data import DataLoader
 from skimage import filters
+import numpy as np
+from skimage.filters import threshold_otsu
 
 
 def collate_fn(batch):
@@ -164,3 +166,33 @@ def compute_sobel(input_tensor):
     sobel_image = torch.tensor(sobel_image, dtype=torch.float32).unsqueeze(0)
     sobel_image = sobel_image.unsqueeze(0)
     return sobel_image
+
+def visualize_single_image(input_tensor, output_tensor, original_image, threshold=0.5, use_otsu=False):
+    output_np = output_tensor.squeeze().cpu().numpy()
+
+    # Normalize output to [0, 255]
+    output_np = (output_np - output_np.min()) / (output_np.max() - output_np.min() + 1e-8)
+    output_np = (output_np * 255).astype(np.uint8)
+
+    if use_otsu:
+        threshold = threshold_otsu(output_np)
+        print(f"Computed Otsu threshold: {threshold}")
+
+    binary_output = (output_np > threshold).astype(np.uint8)
+
+    # --- Display side by side ---
+    fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+    axs[0].imshow(original_image, cmap='gray')
+    axs[0].set_title("Original Image")
+    axs[0].axis('off')
+
+    axs[1].imshow(output_np, cmap='gray')
+    axs[1].set_title("Raw Model Output")
+    axs[1].axis('off')
+
+    axs[2].imshow(binary_output, cmap='gray')
+    axs[2].set_title(f"Binarized Output (threshold={threshold:.3f})")
+    axs[2].axis('off')
+
+    plt.tight_layout()
+    plt.show()
