@@ -20,10 +20,10 @@ start_time = time.time()
 
 # Adjustable parameters - OTTIMIZZATI
 model_path = "creating_cnn/outputs/models/model_datasetTest.pth"
-batch_size = 3  # Aumentato da 1 a 8 per stabilizzare l'addestramento
-base_learning_rate = 1e-4  # Base learning rate (peak will be higher with OneCycleLR
+batch_size = 4  # Aumentato da 1 a 8 per stabilizzare l'addestramento
+base_learning_rate = 3e-4  #  with cosine annealing, over 5e-3 it learns wrong! 5e-4 is still to high, down to 0.49... 1e-4 gets down to 0.45 in 10 epochs, 2e-4 gets down to 0.39 but can't get better after, 3e-4 down to .38 
 max_lr=base_learning_rate * 2
-min_learning_rate=base_learning_rate / 10  # Minimum learning rate after annealing
+min_learning_rate=base_learning_rate / 100  # Minimum learning rate after annealing
 
 num_epochs = 10
 test_size = 0.2
@@ -31,8 +31,8 @@ test_size = 0.2
 bce_weight = 0.5  # will have to discover
 fp_weight=0.7 # 0.6 bad, 0.7 badish, 0.5 same,0.8 same 0.9 white, 1 worse, 1.2 white, 1.4 white, 1.6 black
 
-gamma_focal=1 #will have to discover
-patience = 6  # Per early stopping
+gamma_focal=1.2 #1 good, 2 seems bad, 1.2 maybe
+patience = int(num_epochs/7)  # Per early stopping
 
 # Define paths to your image and label directories
 images_dir = "creating_cnn/lightest_inputs"
