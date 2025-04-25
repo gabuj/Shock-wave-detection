@@ -6,6 +6,8 @@ import json
 import os
 from torch.utils.data import DataLoader
 from skimage import filters
+import numpy as np
+from skimage.filters import threshold_otsu
 
 
 def collate_fn(batch):
@@ -165,39 +167,70 @@ def compute_sobel(input_tensor):
     sobel_image = sobel_image.unsqueeze(0)
     return sobel_image
 
+def visualize_single_image(input_tensor, output_tensor, original_image, threshold=0.5, use_otsu=False):
+    output_np = output_tensor.squeeze().cpu().numpy()
+
+    # Normalize output to [0, 255]
+    output_np = (output_np - output_np.min()) / (output_np.max() - output_np.min() + 1e-8)
+    output_np = (output_np * 255).astype(np.uint8)
+
+    if use_otsu:
+        threshold = threshold_otsu(output_np)
+        print(f"Computed Otsu threshold: {threshold}")
+
+    binary_output = (output_np > threshold).astype(np.uint8)
+
+    # --- Display side by side ---
+    fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+    axs[0].imshow(original_image, cmap='gray')
+    axs[0].set_title("Original Image")
+    axs[0].axis('off')
+
+    axs[1].imshow(output_np, cmap='gray')
+    axs[1].set_title("Raw Model Output")
+    axs[1].axis('off')
+
+    axs[2].imshow(binary_output, cmap='gray')
+    axs[2].set_title(f"Binarized Output (threshold={threshold:.3f})")
+    axs[2].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+
 def combined_loss(pred, target, bce_weight=0.5, fp_weight=2.0, gamma=2.0):
     # Create weight tensor for BCE to penalize false positives more
     # Higher values where target=0 (non-shock pixels) to reduce overtracing
     weights = torch.ones_like(target)
-    weights = weights + (fp_weight-1.0) * (target)  # More weight where target=1 (shockwave pixels)
-    
+    weights = weights + (fp_weight - 1.0) * (target)  # More weight where target=1 (shockwave pixels)
+
     # Focal loss component - focuses more on hard examples
-    pt = target * pred + (1 - target) * (1 - pred) # Probability of true class
-    focal_weights = (1 - pt) ** gamma # Focal loss factor, if very certain, weight is low, if uncertain, weight is high
-    
+    pt = target * pred + (1 - target) * (1 - pred)  # Probability of true class
+    focal_weights = (1 - pt) ** gamma  # Focal loss factor, if very certain, weight is low, if uncertain, weight is high
+
     # Combine focal weights with our custom weights
     final_weights = weights * focal_weights
-    
+
     # Weighted BCE using the built-in weight parameter
     bce_loss = F.binary_cross_entropy(pred, target, reduction='none')
     weighted_bce = (bce_loss * final_weights).mean()
-    
+
     # Modified Dice Loss with emphasis on false negatives
     smooth = 1.0
     pred_flat = pred.view(-1)
     target_flat = target.view(-1)
-    
+
     # Standard intersection
     intersection = (pred_flat * target_flat).sum()
-    
+
     # False positives (pred=1 where target=0)
     false_negatives = ((1 - pred_flat) * target_flat).sum()
-    
+
     # Penalize false positives in denominator
     union = pred_flat.sum() + target_flat.sum() + (fp_weight - 1.0) * false_negatives
-    
+
     # Modified Dice loss
-    dice = 1 - (2.0 * intersection + smooth) / (union + smooth) #
-    
+    dice = 1 - (2.0 * intersection + smooth) / (union + smooth)  #
+
     # Combined loss
     return bce_weight * weighted_bce + (1 - bce_weight) * dice

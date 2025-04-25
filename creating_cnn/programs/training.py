@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
-from cnn_architecture_new import UNet 
+from cnn_architecture_new import UNet
 from useful_functions import combined_loss
 # from sklearn.model_selection import train_test_split
 from torchvision import transforms
@@ -13,7 +13,6 @@ import numpy as np
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
-from torch.optim.lr_scheduler import OneCycleLR  # Changed from CosineAnnealingWarmRestarts
 
 # Start time
 start_time = time.time()
@@ -128,7 +127,6 @@ val_losses = []
 best_val_loss = float('inf')
 best_model_path = model_path.replace('.pth', '_best.pth')
 
-
 # Training loop
 model.train()  # Set the model to training mode
 
@@ -159,13 +157,13 @@ for epoch in range(num_epochs):
         
         # Step the scheduler after each batch (OneCycleLR is designed to update per batch)
         scheduler.step()
-        
+
         running_loss += loss.item()
     
     # Calcola la loss media per questa epoca
     avg_train_loss = running_loss / len(train_dataloader)
     train_losses.append(avg_train_loss)
-
+    
     # Validazione
     model.eval()  # Set the model to evaluation mode
     val_loss = 0.0
@@ -180,7 +178,7 @@ for epoch in range(num_epochs):
     
     avg_val_loss = val_loss / len(test_dataloader)
     val_losses.append(avg_val_loss)
-        
+
     # Stampa le statistiche
     print(f"Epoch {epoch + 1}/{num_epochs}, Train Loss: {avg_train_loss:.6f}, Val Loss: {avg_val_loss:.6f}, LR: {optimizer.param_groups[0]['lr']:.6f}")
     print(f"Time since start: {(time.time()-start_time)/60:.2f} minutes")

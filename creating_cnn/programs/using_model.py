@@ -2,7 +2,7 @@ import torch
 from torchvision import transforms
 import matplotlib.pyplot as plt
 import cv2
-from cnn_architecture import UNet
+from cnn_architecture_new import UNet
 from skimage import color
 
 #image path
@@ -18,7 +18,7 @@ image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
 
 #acquire model
 
-model_path = "creating_cnn/outputs/models/model_B.pth"
+model_path = "creating_cnn/outputs/models/model_A_i_best.pth"
 # Initialize the model (same architecture as during training)
 model = UNet(pretrained=False)  # No need to load pretrained weights for this case
 # Load the trained weights into the model

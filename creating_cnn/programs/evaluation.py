@@ -23,7 +23,7 @@ test_file_path = "creating_cnn/outputs/temporary/test_files.json"
 
 
 #Import model
-model_path = "creating_cnn/outputs/models/model_datasetTest_best.pth"
+model_path = "creating_cnn/outputs/models/model_A_i.pth"
 model = UNet(pretrained=False)  # Initialize the model 
 model.load_state_dict(torch.load(model_path))# Load the trained weights into the model
 
