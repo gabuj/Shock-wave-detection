@@ -64,6 +64,7 @@ class UNet(nn.Module):
         
         d2_resized = F.interpolate(d2, size=e1.shape[2:], mode='bilinear', align_corners=False)
         d1 = self.dec1(d2_resized)  # Utilizzo solo d2_resized, senza concatenazione
+        #normalise output to [0,1]
         
         # output need to have same size as input
         if d1.shape[2:] != x.shape[2:]:

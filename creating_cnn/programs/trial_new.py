@@ -12,7 +12,7 @@ from skimage.filters import threshold_otsu
 
 
 # ----- Configuration -----
-model_path = "creating_cnn/outputs/models/model_A_i_best.pth"
+model_path = "creating_cnn/outputs/models/best_sofar_difficultywithmultipleshocks.pth"
 image_path = 'creating_training_set/schockwaves_images_used/Blunt_body_reentry_shapes1.png'
 #image_path = "creating_training_set/schockwaves_images_used/f4_p3_cam_plane_drop_new_2-22-19.jpg"
 output_path = "creating_cnn/outputs/sample_prediction.png"
