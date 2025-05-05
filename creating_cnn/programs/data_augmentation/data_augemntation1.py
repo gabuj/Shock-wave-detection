@@ -8,12 +8,12 @@ from tqdm import tqdm
 import random
 
 
-num_augmentations=10
+num_augmentations=5
 
 
 # Example Usage
-input_folder = "creating_training_set/augmentation_sample/augmentation_images"
-target_folder = "creating_training_set/augmentation_sample/augmentatin_targets"
+input_folder = "creating_cnn/light_inputs"
+target_folder = "creating_cnn/light_targets"
 output_folder_images = "creating_training_set/augmentation_sample/augmentation_image_results"
 output_folder_targets = "creating_training_set/augmentation_sample/augmentation_targets_results"
 

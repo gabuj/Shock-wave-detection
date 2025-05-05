@@ -15,15 +15,15 @@ edge_weight=1
 
 
 # Define paths to your image and label directories
-images_dir = "creating_cnn/light_inputs"
-labels_dir = "creating_cnn/light_targets"
+images_dir = "creating_cnn/final_images/images"
+labels_dir = "creating_cnn/final_images/targets"
 
 train_file_path = "creating_cnn/outputs/temporary/train_files.json"
 test_file_path = "creating_cnn/outputs/temporary/test_files.json"
 
 
 #Import model
-model_path = "creating_cnn/outputs/models/best_sofar_difficultywithmultipleshocks.pth"
+model_path = "creating_cnn/outputs/models/model_datasetTest_best.pth"
 model = UNet(pretrained=False)  # Initialize the model 
 model.load_state_dict(torch.load(model_path))# Load the trained weights into the model
 

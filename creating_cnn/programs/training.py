@@ -24,18 +24,18 @@ base_learning_rate = 3e-4  #  with cosine annealing, over 5e-3 it learns wrong! 
 max_lr=base_learning_rate * 2
 min_learning_rate=base_learning_rate / 100  # Minimum learning rate after annealing
 
-num_epochs = 10
+num_epochs = 20  # Number of epochs to train
 test_size = 0.2
 
 bce_weight = 0.5  # will have to discover
 fp_weight=0.7 # 0.6 bad, 0.7 badish, 0.5 same,0.8 same 0.9 white, 1 worse, 1.2 white, 1.4 white, 1.6 black
 
-gamma_focal=1.2 #1 good, 2 seems bad, 1.2 maybe
+gamma_focal=1.1 #1 good, 2 seems bad, 1.2 maybe
 patience = int(num_epochs/7)  # Per early stopping
 
 # Define paths to your image and label directories
-images_dir = "creating_cnn/lightest_inputs"
-labels_dir = "creating_cnn/light_targets"
+images_dir = "creating_cnn/final_images/images"
+labels_dir = "creating_cnn/final_images/targets"
 
 train_file_path = "creating_cnn/outputs/temporary/train_files.json"
 test_file_path = "creating_cnn/outputs/temporary/test_files.json"
@@ -43,9 +43,6 @@ test_file_path = "creating_cnn/outputs/temporary/test_files.json"
 # CREATE DATA LOADER
 # Definisci trasformazioni avanzate per data augmentation
 transform_train = transforms.Compose([
-    transforms.RandomRotation(10),  # Rotazioni moderate
-    transforms.RandomAffine(0, translate=(0.1, 0.1), scale=(0.9, 1.1)),  # Traslazioni e scala
-    transforms.RandomHorizontalFlip(),  # Flip orizzontale
     transforms.ToTensor(),  # Conversione a tensore
     transforms.Normalize([0.5], [0.5])  # Normalizzazione per immagini a singolo canale
 ])
